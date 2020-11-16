@@ -1,1 +1,1 @@
-# brandi_internship7_team2
+## 브랜디 인턴십 7차 2팀 Github Repo. 입니다 (위코드 13기)
