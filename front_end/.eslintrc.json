@@ -1,0 +1,30 @@
+{
+  "root": true,
+  "extends": [
+    "eslint:recommended",
+    "plugin:vue/vue3-strongly-recommended",
+    "prettier",
+    "plugin:prettier/recommended"
+  ],
+  "plugins": ["prettier"],
+  "parserOptions": {
+    "parser": "babel-eslint"
+  },
+  "rules": {
+    "prettier/prettier": [
+      "error",
+      {
+        "semi": true,
+        "singleQuote": true,
+        "useTabs": false,
+        "tabWidth": 2,
+        "trailingComma": "none",
+        "printWidth": 80
+      }
+    ]
+  },
+  "env": {
+    "node": true,
+    "es6": true
+  }
+}
