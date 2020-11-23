@@ -1,8 +1,61 @@
-#app {
-  color: green;
-  font-size: 26px;
+body {
+  margin: 0;
+}
 
-  span {
-    color: blue;
+.header {
+  z-index:10;
+  position: fixed;
+  top: 0;
+  background-color: #873b53;
+  width: 100vw;
+  height: 45px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  div.logo {
+    img {
+      width: 100px;
+      height: 21.47px;
+    }
+  }
+
+  div.logout {
+    width: 100px;
+    height: 45px;
+
+color: #cecfd3;
+  }
+}
+
+.sidebar {
+  position: relative;
+  top:45px;
+  left: 0;
+  width: 215px;
+  height: 100vh;
+  background-color: #35363a;
+  ul {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0;
+    li {
+      display: block;
+      list-style-type: none;
+      width: 215px;
+      min-height: 40px;
+      color: #eee;
+      border: 1px solid white;
+      
+      div {
+        margin-top: 20px;
+        display: none;
+      }
+      .active{
+        display: block;
+      }
+    }
   }
 }
