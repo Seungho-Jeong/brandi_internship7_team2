@@ -15,7 +15,10 @@ module.exports = {
       {
         test: /\.js$/i,
         use: {
-          loader: 'babel-loader'
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel.preset-env']
+          }
         },
         exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file)
       },
@@ -30,7 +33,7 @@ module.exports = {
         use: ['style-loader', 'css-loader', 'sass-loader']
       },
       {
-        test: /\.(png|jpe?g|gif)$/i,
+        test: /\.(png|jpe?g|gif|svg)$/i,
         use: {
           loader: 'file-loader'
         }

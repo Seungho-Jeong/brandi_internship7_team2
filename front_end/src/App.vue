@@ -1,14 +1,23 @@
 <template>
-  <div>
+  <!-- <div>
     Brandi Admin Site Project -
     <span>Vue/Webpack Initial Setup<span /></span>
-  </div>
+  </div> -->
+  <main>
+    <router-view></router-view>
+  </main>
 </template>
 
-<script lang="js">
-import {defineComponent} from "vue"
-
-export default defineComponent({
-  template: `<div>adf</div>`
-})
+<script>
+export default {
+  data() {
+    return {};
+  }
+};
 </script>
+
+<style lang="scss">
+* {
+  font-family: arial, sans-serif;
+}
+</style>
