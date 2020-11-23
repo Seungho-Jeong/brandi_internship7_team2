@@ -3,7 +3,7 @@ from util           import utils
 
 
 class UserDao:
-    def sign_up(db, data):
+    def sign_up(self, db, data):
         with db.cursor() as cursor:
             if utils.check_account(cursor, data):
                 raise ExistsException('existed account')

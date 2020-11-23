@@ -3,7 +3,6 @@ from flask import jsonify, Blueprint, request
 from util.exception import ExistsException, NotExistsException
 from db_connection  import db_connection
 from service        import UserService
-from model          import UserDao
 
 
 class UserView:
@@ -12,6 +11,7 @@ class UserView:
     def __init__(self, user_service):
         self.user_service = user_service
 
+    @staticmethod
     @user_app.route('/signup', methods=['POST'])
     def sign_up():
         db = None
@@ -19,7 +19,7 @@ class UserView:
             data = request.json
             db = db_connection()
 
-            UserService.sign_up(db, data)
+            UserService.sign_up(UserService, db, data)
             db.commit()
 
             return jsonify({'message' : 'SUCCESS'}), 200
@@ -35,6 +35,7 @@ class UserView:
             if db:
                 db.close()
 
+    @staticmethod
     @user_app.route('/signin', methods=['POST'])
     def sign_in(self):
         db = None
@@ -42,7 +43,7 @@ class UserView:
             data = request.json
             db = db_connection()
 
-            access_token = UserService.sign_in(db, data)
+            access_token = UserService.sign_in(UserService, db, data)
 
             return jsonify({'message' : 'SUCCESS', 'access_token' : access_token}), 200
         except NotExistsException as e:
@@ -60,7 +61,7 @@ class UserView:
         try:
             db = db_connection()
 
-            result = UserService.seller_category_type(UserService(UserDao()), db)
+            result = UserService.seller_category_type(UserService, db)
 
             return jsonify({'message' : 'SUCCESS', 'category_list' : result}), 200
         except Exception as e:
