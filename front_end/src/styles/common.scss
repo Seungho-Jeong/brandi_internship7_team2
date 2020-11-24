@@ -1,0 +1,9 @@
+// common mixins:
+@mixin flex-set($arg...) {
+  display: flex;
+  justify-content: #{nth($arg, 1)};
+  align-items: #{nth($arg, 2)};
+  @if length($arg) == 3 {
+    flex-direction: #{nth($arg, 3)}
+  }
+}
