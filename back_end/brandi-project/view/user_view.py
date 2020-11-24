@@ -1,3 +1,5 @@
+import jwt
+
 from flask import jsonify, Blueprint, request
 
 from util.exception import ExistsException, NotExistsException
@@ -11,7 +13,6 @@ class UserView:
     def __init__(self, user_service):
         self.user_service = user_service
 
-    @staticmethod
     @user_app.route('/signup', methods=['POST'])
     def sign_up():
         db = None
@@ -22,39 +23,66 @@ class UserView:
             UserService.sign_up(UserService, db, data)
             db.commit()
 
-            return jsonify({'message' : 'SUCCESS'}), 200
+            return jsonify({'message' : 'success'}), 200
+        except ExistsException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return jsonify({'message' : 'KEY_ERROR {}'.format(e)}), 400
-        except ExistsException as e:
-            return jsonify({'message' : 'ERROR {}'.format(e)}), 409
+            return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return jsonify({'message' : 'ERROR {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
 
-    @staticmethod
     @user_app.route('/signin', methods=['POST'])
-    def sign_in(self):
+    def sign_in():
         db = None
         try:
             data = request.json
             db = db_connection()
 
-            access_token = UserService.sign_in(UserService, db, data)
+            token = UserService.sign_in(UserService, db, data)
+            db.commit()
 
-            return jsonify({'message' : 'SUCCESS', 'access_token' : access_token}), 200
+            return jsonify({'message' : 'success', 'token' : token}), 200
         except NotExistsException as e:
-            return jsonify({'message' : 'ERROR {}'.format(e)}), 400
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
+        except KeyError as e:
+            db.rollback()
+            return jsonify({'message': 'error {}'.format(e)}), 400
         except Exception as e:
-            return jsonify({'message' : 'ERROR {}'.format(e)}), 500
+            db.rollback()
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
 
-    @staticmethod
+    @user_app.route('/token', methods=['POST'])
+    def reissuance_token():
+        db = None
+        try:
+            data = request.json
+            db = db_connection()
+
+            token = UserService.reissuance_token(UserService, db, data)
+
+            return jsonify({'message': 'success', 'access_token' : token}), 200
+        except jwt.InvalidTokenError as e:
+            return jsonify({'message': 'error {}'.format(e)}), 401
+        except jwt.ExpiredSignatureError as e:
+            return jsonify({'message': 'error {}'.format(e)}), 401
+        except KeyError as e:
+            return jsonify({'message': 'key_error {}'.format(e)}), 400
+        except Exception as e:
+            return jsonify({'message': 'error {}'.format(e)}), 500
+        finally:
+            if db:
+                db.close()
+
     @user_app.route('/category', methods=['GET'])
     def seller_category_type():
         db = None
@@ -63,9 +91,9 @@ class UserView:
 
             result = UserService.seller_category_type(UserService, db)
 
-            return jsonify({'message' : 'SUCCESS', 'category_list' : result}), 200
+            return jsonify({'message' : 'success', 'category_list' : result}), 200
         except Exception as e:
-            return jsonify({'message' : 'ERROR {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
