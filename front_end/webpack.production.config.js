@@ -13,14 +13,11 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/i,
+        test: /\.m?js$/i,
+        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file),
         use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel.preset-env']
-          }
-        },
-        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file)
+          loader: 'babel-loader'
+        }
       },
       {
         test: /\.vue$/i,

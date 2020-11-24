@@ -14,6 +14,7 @@
         :type="input.type"
         :placeholder="input.placeholder"
         :id="input.id"
+        @blur="clearValidation"
       />
     </div>
     <span
@@ -28,14 +29,14 @@
 <script>
 export default {
   name: 'InputWithSpan',
-  props: ['input', 'modelValue', ''],
+  props: ['input', 'modelValue', 'clearValidation'],
   emit: ['update:modelValue'],
   data() {
     return {};
   },
   methods: {
     updateValue(e) {
-      console.log(e.target.value);
+      // console.log(e.target.value);
       this.$emit('update:modelValue', e.target.value);
     }
   }

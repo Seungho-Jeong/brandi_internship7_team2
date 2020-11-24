@@ -5,6 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { HotModuleReplacementPlugin } = require('webpack');
 
 module.exports = {
+  target: 'web',
   mode: 'development',
   entry: './src/index.js',
   output: {
@@ -14,14 +15,14 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/i,
+        test: /\.m?js$/i,
+        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file),
         use: {
           loader: 'babel-loader',
           options: {
             presets: ['@babel/preset-env']
           }
-        },
-        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file)
+        }
       },
       {
         test: /\.vue$/i,

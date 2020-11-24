@@ -12,9 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "^1.2.32",
-    "@fortawesome/free-solid-svg-icons": "^5.15.1",
-    "@fortawesome/vue-fontawesome": "^3.0.0-2",
+    "ant-design-vue": "^2.0.0-rc.1",
     "core-js": "^3.7.0",
     "vue": "^3.0.2",
     "vue-router": "^4.0.0-rc.3"

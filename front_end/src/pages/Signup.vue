@@ -186,14 +186,17 @@ export default {
   // },
   updated() {
     this.isAccountValid();
+    this.isPwValid();
+    this.isPwCheckValid();
   },
   methods: {
     isAccountValid() {
       const isAccountAvailable =
         this.signupInfoInputList[0].accountValue.length !== 0 &&
-        this.existingAccounts.includes(
+        !this.existingAccounts.includes(
           this.signupInfoInputList[0].accountValue
         );
+      console.log(this.signupInfoInputList[0].accountValue);
       isAccountAvailable ? console.log('true') : console.log('false');
       const isAccountLengthValid =
         this.signupInfoInputList[0].accountValue.length >= 5;
@@ -210,11 +213,12 @@ export default {
       }
     },
     isPwValid() {
-      const pwValidation = /^(?=.{8,20})(?=.*([A-Za-z]))(?=.*[0-9])(?=.*[~!@#$%^&*()-_=+,.<>/?;:'"[{}\]\\|]).*$/;
+      const pwValidation = /^(?=.{8,20})(?=.*[A-Za-z])(?=.*[0-9])(?=.*[~!@#$%^&*()-_=+,.<>/?;:'"[{}]).*$/;
       const isValid = pwValidation.test(
         this.signupInfoInputList[1].passwordValue
       );
 
+      console.log(this.signupInfoInputList[1].passwordValue);
       isValid
         ? (this.signupInfoInputList[1].passwordIsValid = true)
         : (this.signupInfoInputList[1].passwordIsValid = false);
