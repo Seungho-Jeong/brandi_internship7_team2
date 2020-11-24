@@ -9,12 +9,11 @@
     >
       <i :class="input.iconClass"></i>
       <input
-        :value="modelValue"
-        @input="updateValue"
         :type="input.type"
         :placeholder="input.placeholder"
         :id="input.id"
-        @blur="clearValidation"
+        :value="modelValue"
+        @input="updateValue"
       />
     </div>
     <span
@@ -23,20 +22,20 @@
       :id="input.id"
       >{{ input.spanText[input.spanTextOption] }}</span
     >
+    <p v-if="input.explanation">{{ input.explanation }}</p>
   </div>
 </template>
 
 <script>
 export default {
   name: 'InputWithSpan',
-  props: ['input', 'modelValue', 'clearValidation'],
+  props: ['input', 'modelValue'],
   emit: ['update:modelValue'],
   data() {
     return {};
   },
   methods: {
     updateValue(e) {
-      // console.log(e.target.value);
       this.$emit('update:modelValue', e.target.value);
     }
   }
@@ -90,11 +89,12 @@ export default {
     color: #a94442;
     font-size: 13px;
     margin-top: 7px;
+  }
 
-    &.managerMobile {
-      color: #349afe;
-      font-size: 12px;
-    }
+  p {
+    color: #349afe;
+    font-size: 12px;
+    margin-top: 7px;
   }
 }
 </style>
