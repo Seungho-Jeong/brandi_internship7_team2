@@ -46,20 +46,6 @@ eslint-disable vue/require-v-for-key */
               :key="category"
               v-model="sellerCategories.selectedSellerCategory"
             />
-            <!-- <div
-              v-for="category in sellerCategories"
-              class="radio-selection"
-              :key="category"
-            >
-              <input
-                type="radio"
-                name="sellerCategory"
-                :value="category"
-                :id="category"
-                v-model="selectedSellerCategory"
-              />
-              <label :for="category">{{ category }}</label>
-            </div> -->
           </div>
           <InputWithSpan
             v-for="input in sellerInfoInputList"
@@ -95,6 +81,7 @@ export default {
   data() {
     return {
       existingAccounts: ['d', 'dd'],
+      isFormValid: false,
       signupInfoInputList: [
         {
           id: 'account',
@@ -105,7 +92,8 @@ export default {
           iconClass: 'fas fa-user',
           spanText: {
             1: '이미 사용중인 아이디 입니다.',
-            2: '아이디의 최소 길이는 5글자 입니다.'
+            2: '아이디의 최소 길이는 5글자 입니다.',
+            3: '아이디는 5-~20글자의 영문, 숫자, 언더바, 하이픈만 사용 가능하며 시작 문자는 영문 또는 숫자입니다.'
           },
           spanTextOption: 1
         },
@@ -215,16 +203,27 @@ export default {
           inputId[inputIdValue]
         );
         const isAccountLengthValid = inputId[inputIdValue].length >= 5;
+        const accountIdValidation = /^([A-Za-z0-9])([A-Za-z0-9_-]){4,19}$/;
+        const isAccountIdValid = accountIdValidation.test(
+          inputId[inputIdValue]
+        );
         const isValid =
-          isInputEntered && isAccountAvailable && isAccountLengthValid;
+          isInputEntered &&
+          isAccountAvailable &&
+          isAccountLengthValid &&
+          isAccountIdValid;
+
         isValid
           ? (inputId[inputIdIsValid] = true)
           : (inputId[inputIdIsValid] = false);
+
         if (!isValid) {
           !isAccountAvailable || (!isAccountAvailable && !isAccountLengthValid)
             ? (inputId.spanTextOption = 1)
             : !isAccountLengthValid
             ? (inputId.spanTextOption = 2)
+            : !isAccountIdValid
+            ? (inputId.spanTextOption = 3)
             : null;
         }
       }
@@ -239,9 +238,11 @@ export default {
       } else {
         const pwValidation = /^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[~!@#$%^&*()\-_=+,.<>/?;:'"[{}\]\\|]).{8,20}$/;
         const isValid = pwValidation.test(inputId[inputIdValue]);
+
         isValid
           ? (inputId[inputIdIsValid] = true)
           : (inputId[inputIdIsValid] = false);
+
         this.isPwCheckValid();
       }
     },
@@ -272,6 +273,7 @@ export default {
       } else {
         const managerMobileValidation = /^(\d{11})$/;
         const isValid = managerMobileValidation.test(inputId[inputIdValue]);
+
         isValid
           ? (inputId[inputIdIsValid] = true)
           : (inputId[inputIdIsValid] = false);
@@ -302,6 +304,7 @@ export default {
       } else {
         const sellerNameEngValidation = /^([a-z])+$/;
         const isValid = sellerNameEngValidation.test(inputId[inputIdValue]);
+
         isValid
           ? (inputId[inputIdIsValid] = true)
           : (inputId[inputIdIsValid] = false);
@@ -317,6 +320,7 @@ export default {
       } else {
         const managerMobileValidation = /^([\d-]+)$/;
         const isValid = managerMobileValidation.test(inputId[inputIdValue]);
+
         isValid
           ? (inputId[inputIdIsValid] = true)
           : (inputId[inputIdIsValid] = false);
@@ -349,10 +353,32 @@ export default {
           console.log('Input validation error');
       }
     },
+    validateForm() {
+      const validationItemsList = [
+        this.signupInfoInputList[0].accountIsValid,
+        this.signupInfoInputList[1].passwordIsValid,
+        this.signupInfoInputList[2].passwordCheckIsValid,
+        this.managerMobileInput[0].managerMobileIsValid,
+        this.sellerInfoInputList[0].sellerNameKoIsValid,
+        this.sellerInfoInputList[1].sellerNameEngIsValid,
+        this.sellerInfoInputList[2].csContactIsValid
+      ];
+      const isAllValid = validationItemsList.every((item) => item == true);
+
+      isAllValid ? (this.isFormValid = true) : (this.isFormValid = false);
+    },
     requestSignup() {
-      const action = confirm('입력하신 정보로 셀러신청을 하시겠습니까?');
-      if (action) {
-        alert('신청이 완료되었습니다.\n검토 후 연락 드리겠습니다. 감사합니다.');
+      this.validateForm();
+
+      if (this.isFormValid) {
+        const action = confirm('입력하신 정보로 셀러신청을 하시겠습니까?');
+        if (action) {
+          alert(
+            '신청이 완료되었습니다.\n검토 후 연락 드리겠습니다. 감사합니다.'
+          );
+        }
+      } else {
+        alert('입력하신 정보를 확인해주세요.');
       }
     },
     cancelSignup() {
@@ -437,20 +463,6 @@ export default {
         .seller-categories {
           display: flex;
           flex-wrap: wrap;
-
-          // .radio-selection {
-          //   margin-right: 15px;
-          //   cursor: pointer;
-
-          //   input {
-          //     cursor: pointer;
-          //   }
-
-          //   label {
-          //     font-size: 14px;
-          //     cursor: pointer;
-          //   }
-          // }
         }
       }
 
