@@ -1,3 +1,7 @@
+body {
+  background-color: #fafafa;
+}
+
 input {
   width: 100%;
   padding: 12px;
@@ -7,7 +11,13 @@ input {
   margin-top: 6px;
   margin-bottom: 16px;
 }
+input.isEmply {
+  border: 1px solid red;
+}
 
+p.isEmpty{
+  display: block;
+}
 /* Style the submit button */
 input[type=submit] {
   background-color: black;
@@ -16,8 +26,11 @@ input[type=submit] {
 
 /* Style the container for inputs */
 .container {
-  background-color: #f1f1f1;
+  background-color: white;
   padding: 20px;
+  width: 380px;
+  height: 518px;
+  box-shadow: 0 4px 31px 0 rgba(0, 0, 0, 0.1);
 }
 
 /* The message box is shown when the user clicks on the password field */
