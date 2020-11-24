@@ -21,11 +21,11 @@ class UserDao:
 
     def sign_up(self, db, data):
         """
-
-        :param db:
-        :param data:
-        :return:
+        유저 회원가입
+        :param db: db_connection
+        :param data: request body
         """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO sellers(
@@ -51,6 +51,13 @@ class UserDao:
             """, data)
 
     def sign_in(self, db, data):
+        """
+        유저 로그인
+        :param db: db_connection
+        :param data: request body
+        :return: 유저정보 (아이디, 패스워드)
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT 
@@ -65,6 +72,12 @@ class UserDao:
             return cursor.fetchone()
 
     def create_refresh_token(self, db, data):
+        """
+        리프레시 토큰 생성 시 DB에 저장
+        :param db: db_connection
+        :param data: request body
+        """
+        
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO seller_refresh_token(
@@ -79,6 +92,13 @@ class UserDao:
             """, data)
 
     def get_refresh_token(self, db, data):
+        """
+        해당 계정에 대한 리프레시 토큰 가져오기
+        :param db: db_connection
+        :param data: request body
+        :return: 리프레시 토큰 정보
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -93,6 +113,12 @@ class UserDao:
             return cursor.fetchone()
 
     def update_refresh_token(self, db, data):
+        """
+        리프레시 토큰 만료시 해당 계정의 리프레시 토큰 업데이트(재발급)
+        :param db: db_connection
+        :param data: request body
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 UPDATE 
@@ -105,6 +131,11 @@ class UserDao:
             """, data)
 
     def seller_category_type(self, db):
+        """
+        회원가입 시 셀러 카테고리 정보 가져오기
+        :param db: db_connection
+        :return: 셀러 카테고리 리스트
+        """
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
