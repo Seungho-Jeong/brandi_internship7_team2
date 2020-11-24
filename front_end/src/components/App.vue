@@ -58,7 +58,7 @@ export default {
       console.log(this.selected);
     },
     narrowSidebar(){
-      this.sidebarButton === false ? this.sidebarButton = true : this.sidebarButton = false;
+      this.sidebarButton  false ? this.sidebarButton = true : this.sidebarButton = false;
     },
     showLogout(){
 

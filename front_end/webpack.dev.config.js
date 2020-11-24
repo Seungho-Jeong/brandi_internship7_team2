@@ -5,6 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { HotModuleReplacementPlugin } = require('webpack');
 
 module.exports = {
+  target: 'web',
   mode: 'development',
   entry: './src/index.js',
   output: {
@@ -14,11 +15,14 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/i,
+        test: /\.m?js$/i,
+        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file),
         use: {
-          loader: 'babel-loader'
-        },
-        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file)
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
       },
       {
         test: /\.vue$/i,
@@ -31,7 +35,7 @@ module.exports = {
         use: ['style-loader', 'css-loader', 'sass-loader']
       },
       {
-        test: /\.(png|jpe?g|gif)$/i,
+        test: /\.(png|jpe?g|gif|svg)$/i,
         use: {
           loader: 'file-loader'
         }
@@ -54,6 +58,7 @@ module.exports = {
       vue$: 'vue/dist/vue.esm-bundler.js'
     }
   },
+  devtool: 'eval-cheap-source-map',
   devServer: {
     port: 9000,
     contentBase: path.resolve(__dirname, 'dist'),
