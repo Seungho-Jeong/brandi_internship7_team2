@@ -37,7 +37,7 @@
     </form>
     <p class="checkSignup">
       아직 셀러가 아니신가요?
-      <router-link class="signup" to="signup">회원가입</router-link>
+      <router-link class="signup" to="signup">회원가입하기</router-link>
     </p>
   </div>
 </template>
