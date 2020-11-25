@@ -5,22 +5,17 @@
       <button />
       <span> staging(staging) </span>
     </div>
-    <div class="logout"
-@mouseover="showLogout()">
+    <div class="logout" @mouseover="showLogout()">
       {{ userId }}
     </div>
   </div>
 
   <div class="sidebar">
     <div class="button">
-      <button @click="narrowSidebar()">
-button
-</button>
+      <button @click="narrowSidebar()">button</button>
     </div>
     <ul>
-      <li
-v-for="(item, idx) in sidebar" @click="showSubmenu(idx)"
->
+      <li v-for="(item, idx) in sidebar" @click="showSubmenu(idx)">
         {{ item.title }}
         <div :class="{ active: selected && selectedIdx === idx }">
           <li v-for="n in sidebar[idx].submenu.length">
@@ -33,6 +28,7 @@ v-for="(item, idx) in sidebar" @click="showSubmenu(idx)"
 </template>
 
 <script lang="js">
+import './Navbar.scss'
 export default {
   data(){
     return {
@@ -58,7 +54,7 @@ export default {
       console.log(this.selected);
     },
     narrowSidebar(){
-      this.sidebarButton  false ? this.sidebarButton = true : this.sidebarButton = false;
+      this.sidebarButton === false ? this.sidebarButton = true : this.sidebarButton = false;
     },
     showLogout(){
 

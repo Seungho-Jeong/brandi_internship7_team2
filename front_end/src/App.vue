@@ -4,7 +4,10 @@
     <span>Vue/Webpack Initial Setup<span /></span>
   </div> -->
   <main>
-    <router-view></router-view>
+    <router-link :to="{ name: 'Brandi' }">Events</router-link>
+    <div>
+      <router-view></router-view>
+    </div>
   </main>
 </template>
 

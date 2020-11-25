@@ -7,11 +7,12 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
 import Login from './pages/Login.vue';
 import Signup from './pages/Signup.vue';
+import Brandi from './pages/Brandi.vue';
 import './styles/common.scss';
 import './styles/reset.scss';
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHashHistory(process.env.BASE_URL),
   routes: [
     {
       path: '/login',
@@ -20,6 +21,12 @@ const router = createRouter({
     {
       path: '/signup',
       component: Signup
+    },
+    {
+      path: '/brandi/:id',
+      component: Brandi,
+      name: 'Brandi',
+      props: true
     }
   ]
 });
