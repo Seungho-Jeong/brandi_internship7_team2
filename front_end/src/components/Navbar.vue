@@ -1,34 +1,38 @@
-<template>
-  <div class="header">
-    <div class="logo">
-      <img :src="logo" />
-      <button />
-      <span> staging(staging) </span>
-    </div>
-    <div class="logout" @mouseover="showLogout()">
-      {{ userId }}
-    </div>
-  </div>
+/* eslint-disable vue/require-v-for-key */
 
-  <div class="sidebar">
-    <div class="button">
-      <button @click="narrowSidebar()">button</button>
+<template>
+  <div>
+    <div class="header">
+      <div class="logo">
+        <img :src="logo" />
+        <button />
+        <span> staging(staging) </span>
+      </div>
+      <div class="logout" @mouseover="showLogout()">
+        {{ userId }}
+      </div>
     </div>
-    <ul>
-      <li v-for="(item, idx) in sidebar" @click="showSubmenu(idx)">
-        {{ item.title }}
-        <div :class="{ active: selected && selectedIdx === idx }">
-          <li v-for="n in sidebar[idx].submenu.length">
-            {{ sidebar[idx].submenu[n - 1] }}
-          </li>
-        </div>
-      </li>
-    </ul>
+
+    <div class="sidebar">
+      <div class="button">
+        <button @click="narrowSidebar()">button</button>
+      </div>
+      <ul>
+        <li v-for="(item, idx) in sidebar" @click="showSubmenu(idx)">
+          {{ item.title }}
+          <div :class="{ active: selected && selectedIdx === idx }">
+            <li v-for="n in sidebar[idx].submenu.length">
+              {{ sidebar[idx].submenu[n - 1] }}
+            </li>
+          </div>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script lang="js">
-import './Navbar.scss'
+// import './Navbar.scss'
 export default {
   data(){
     return {
@@ -62,3 +66,80 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+body {
+  margin: 0;
+}
+
+.header {
+  z-index: 10;
+  position: fixed;
+  top: 0;
+  background-color: #873b53;
+  width: 100vw;
+  height: 45px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  div.logo {
+    img {
+      width: 100px;
+      height: 21.47px;
+    }
+  }
+
+  div.logout {
+    width: 100px;
+    height: 45px;
+
+    color: #cecfd3;
+  }
+}
+.sidebar {
+  position: relative;
+  top: 45px;
+  left: 0;
+  width: 215px;
+  height: 100vh;
+  background-color: #35363a;
+
+  .button {
+    height: 20px;
+    width: auto;
+    display: flex;
+    justify-content: flex-end;
+    button {
+      position: relative;
+      top: 20px;
+      right: 0;
+      width: 10px;
+      height: 10px;
+    }
+  }
+  ul {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin-top: 20px;
+    padding: 0;
+    li {
+      display: block;
+      list-style-type: none;
+      width: 215px;
+      min-height: 40px;
+      color: #eee;
+      border: 1px solid white;
+
+      div {
+        margin-top: 20px;
+        display: none;
+      }
+      .active {
+        display: block;
+      }
+    }
+  }
+}
+</style>
