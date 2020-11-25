@@ -1,17 +1,22 @@
 <template>
-  <!-- <div>
-    Brandi Admin Site Project -
-    <span>Vue/Webpack Initial Setup<span /></span>
-  </div> -->
   <main>
+    <Navbar v-if="isNavShown" />
     <router-view></router-view>
   </main>
 </template>
 
 <script>
+import Navbar from './components/Navbar.vue';
+
 export default {
-  data() {
-    return {};
+  components: {
+    Navbar
+  },
+  computed: {
+    isNavShown() {
+      const excludeNavPathsList = ['/login', '/signup'];
+      return !excludeNavPathsList.includes(this.$route.path);
+    }
   }
 };
 </script>

@@ -376,6 +376,7 @@ export default {
           alert(
             '신청이 완료되었습니다.\n검토 후 연락 드리겠습니다. 감사합니다.'
           );
+          this.$router.push('/');
         }
       } else {
         alert('입력하신 정보를 확인해주세요.');
@@ -384,7 +385,7 @@ export default {
     cancelSignup() {
       const action = confirm('브랜디 가입을 취소하시겠습니까?');
       if (action) {
-        alert('회원가입이 취소되었습니다');
+        this.$router.push('/');
       }
     }
   }
