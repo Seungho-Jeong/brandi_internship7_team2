@@ -21,12 +21,23 @@
         <li v-for="(item, idx) in sidebar" @click="showSubmenu(idx)">
           {{ item.title }}
           <div :class="{ active: selected && selectedIdx === idx }">
-            <li v-for="n in sidebar[idx].submenu.length">
-              {{ sidebar[idx].submenu[n - 1] }}
-            </li>
+            <router-link
+              v-for="n in sidebar[idx].submenu.length"
+              class="event-link"
+              to="signup"
+            >
+              <li class="submenu">
+                {{ sidebar[idx].submenu[n - 1] }}
+              </li>
+            </router-link>
           </div>
         </li>
       </ul>
+    </div>
+
+    <div class="content">
+      <router-view />
+      content goes here
     </div>
   </div>
 </template>
@@ -61,7 +72,6 @@ export default {
       this.sidebarButton === false ? this.sidebarButton = true : this.sidebarButton = false;
     },
     showLogout(){
-
     }
   }
 }
@@ -98,7 +108,8 @@ body {
   }
 }
 .sidebar {
-  position: relative;
+  /* position: relative; */
+  position: fixed;
   top: 45px;
   left: 0;
   width: 215px;
@@ -135,11 +146,24 @@ body {
       div {
         margin-top: 20px;
         display: none;
+        .submenu {
+          text-indent: 8px;
+        }
       }
       .active {
         display: block;
       }
     }
   }
+}
+
+.content {
+  width: calc(100vw - 215px);
+  height: calc(100vh - 45px);
+  overflow-x: hidden;
+  overflow-y: scroll;
+  position: fixed;
+  bottom: 0;
+  right: 0;
 }
 </style>
