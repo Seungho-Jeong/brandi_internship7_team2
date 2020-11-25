@@ -13,11 +13,11 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/i,
+        test: /\.m?js$/i,
+        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file),
         use: {
           loader: 'babel-loader'
-        },
-        exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file)
+        }
       },
       {
         test: /\.vue$/i,
@@ -30,7 +30,7 @@ module.exports = {
         use: ['style-loader', 'css-loader', 'sass-loader']
       },
       {
-        test: /\.(png|jpe?g|gif)$/i,
+        test: /\.(png|jpe?g|gif|svg)$/i,
         use: {
           loader: 'file-loader'
         }

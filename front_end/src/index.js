@@ -1,15 +1,29 @@
 import { createApp } from 'vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
+// import { library } from '@fortawesome/fontawesome-svg-core';
+// import { faUserSecret } from '@fortawesome/free-solid-svg-icons';
+// import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+
 import App from './App.vue';
-import './index.scss';
+import Login from './pages/Login.vue';
+import Signup from './pages/Signup.vue';
+import './styles/common.scss';
+import './styles/reset.scss';
 
-createApp(App).mount('#app');
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    {
+      path: '/login',
+      component: Login
+    },
+    {
+      path: '/signup',
+      component: Signup
+    }
+  ]
+});
 
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import store from './store'
-
-createApp(App)
-  .use(store)
-  .use(router)
-  .mount('#app')
+const app = createApp(App);
+app.use(router);
+app.mount('#app');
