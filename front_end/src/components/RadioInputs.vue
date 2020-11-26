@@ -3,11 +3,11 @@
     <input
       type="radio"
       :name="radioObject.name"
-      :id="category"
+      :id="category.label"
       :value="modelValue"
       @input="updateValue"
     />
-    <label :for="category">{{ category }}</label>
+    <label :for="category.label">{{ category.label }}</label>
   </div>
 </template>
 

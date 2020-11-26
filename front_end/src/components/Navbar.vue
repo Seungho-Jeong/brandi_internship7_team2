@@ -18,13 +18,18 @@
         <button @click="narrowSidebar()">button</button>
       </div>
       <ul>
-        <li v-for="(item, idx) in sidebar" @click="showSubmenu(idx)">
+        <li
+          v-for="(item, idx) in sidebar"
+          @click="showSubmenu(idx)"
+          :key="item.title"
+        >
           {{ item.title }}
           <div :class="{ active: selected && selectedIdx === idx }">
             <router-link
               v-for="n in sidebar[idx].submenu.length"
               class="event-link"
               to="signup"
+              :key="n"
             >
               <li class="submenu">
                 {{ sidebar[idx].submenu[n - 1] }}

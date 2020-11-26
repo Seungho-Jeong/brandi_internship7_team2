@@ -19,21 +19,27 @@ eslint-disable vue/require-v-for-key */
         <div class="signup-subdiv account-and-pw">
           <h3>가입 정보</h3>
           <InputWithSpan
-            v-for="input in signupInfoInputList"
-            :input="input"
-            :key="input.id"
-            v-model.trim="input[`${input.id}Value`]"
-            @update:modelValue="validateInput(input.id)"
+            :input="account"
+            v-model.trim="account.value"
+            @update:modelValue="validateInput(account.id)"
+          />
+          <InputWithSpan
+            :input="password"
+            v-model.trim="password.value"
+            @update:modelValue="validateInput(password.id)"
+          />
+          <InputWithSpan
+            :input="passwordCheck"
+            v-model.trim="passwordCheck.value"
+            @update:modelValue="validateInput(passwordCheck.id)"
           />
         </div>
         <div class="signup-subdiv manager-mobile">
           <h3>담당자 정보<span> (*실제 샾을 운영하시는 분)</span></h3>
           <InputWithSpan
-            v-for="input in managerMobileInput"
-            :input="input"
-            :key="input.id"
-            v-model.trim="input[`${input.id}Value`]"
-            @update:modelValue="validateInput(input.id)"
+            :input="managerMobile"
+            v-model.trim="managerMobile.value"
+            @update:modelValue="validateInput(managerMobile.id)"
           />
         </div>
         <div class="signup-subdiv seller-info">
@@ -43,16 +49,24 @@ eslint-disable vue/require-v-for-key */
               v-for="category in sellerCategories.list"
               :radio-object="sellerCategories"
               :category="category"
-              :key="category"
+              :key="category.categoryId"
               v-model="sellerCategories.selectedSellerCategory"
             />
           </div>
           <InputWithSpan
-            v-for="input in sellerInfoInputList"
-            :input="input"
-            :key="input.id"
-            v-model.trim="input[`${input.id}Value`]"
-            @update:modelValue="validateInput(input.id)"
+            :input="sellerNameKo"
+            v-model.trim="sellerNameKo.value"
+            @update:modelValue="validateInput(sellerNameKo.id)"
+          />
+          <InputWithSpan
+            :input="sellerNameEng"
+            v-model.trim="sellerNameEng.value"
+            @update:modelValue="validateInput(sellerNameEng.id)"
+          />
+          <InputWithSpan
+            :input="csContact"
+            v-model.trim="csContact.value"
+            @update:modelValue="validateInput(csContact.id)"
           />
         </div>
         <div class="buttons">
@@ -82,142 +96,130 @@ export default {
     return {
       existingAccounts: ['d', 'dd'],
       isFormValid: false,
-      signupInfoInputList: [
-        {
-          id: 'account',
-          type: 'text',
-          placeholder: '아이디',
-          accountValue: '',
-          accountIsValid: true,
-          iconClass: 'fas fa-user',
-          spanText: {
-            1: '이미 사용중인 아이디 입니다.',
-            2: '아이디의 최소 길이는 5글자 입니다.',
-            3: '아이디는 5-~20글자의 영문, 숫자, 언더바, 하이픈만 사용 가능하며 시작 문자는 영문 또는 숫자입니다.'
-          },
-          spanTextOption: 1
+      account: {
+        id: 'account',
+        type: 'text',
+        placeholder: '아이디',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-user',
+        spanText: {
+          1: '이미 사용중인 아이디 입니다.',
+          2: '아이디의 최소 길이는 5글자 입니다.',
+          3: '아이디는 5-~20글자의 영문, 숫자, 언더바, 하이픈만 사용 가능하며 시작 문자는 영문 또는 숫자입니다.'
         },
-        {
-          id: 'password',
-          type: 'password',
-          placeholder: '비밀번호',
-          passwordValue: '',
-          passwordIsValid: true,
-          iconClass: 'fas fa-lock',
-          spanText: {
-            1: '비밀번호는 8~20글자의 영문대소문자, 숫자, 특수문자를 조합해야 합니다.'
-          },
-          spanTextOption: 1
+        spanTextOption: 1
+      },
+      password: {
+        id: 'password',
+        type: 'password',
+        placeholder: '비밀번호',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-lock',
+        spanText: {
+          1: '비밀번호는 8~20글자의 영문대소문자, 숫자, 특수문자를 조합해야 합니다.'
         },
-        {
-          id: 'passwordCheck',
-          type: 'password',
-          placeholder: '비밀번호 재입력',
-          passwordCheckValue: '',
-          passwordCheckIsValid: true,
-          iconClass: 'fas fa-check',
-          spanText: { 1: '비밀번호가 일치하지 않습니다.' },
-          spanTextOption: 1
-        }
-      ],
-      managerMobileInput: [
-        {
-          id: 'managerMobile',
-          type: 'text',
-          placeholder: '핸드폰번호',
-          managerMobileValue: '',
-          managerMobileIsValid: true,
-          iconClass: 'fas fa-phone',
-          spanText: {
-            1: '올바른 정보를 입력해주세요.'
-          },
-          spanTextOption: 1,
-          explanation:
-            '입점 신청 후 브랜디 담당자가 연락을 드릴 수 있으니 정확한 정보를 기입해주세요.'
-        }
-      ],
+        spanTextOption: 1
+      },
+      passwordCheck: {
+        id: 'passwordCheck',
+        type: 'password',
+        placeholder: '비밀번호 재입력',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-check',
+        spanText: { 1: '비밀번호가 일치하지 않습니다.' },
+        spanTextOption: 1
+      },
+      managerMobile: {
+        id: 'managerMobile',
+        type: 'text',
+        placeholder: '핸드폰번호',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-phone',
+        spanText: {
+          1: '올바른 정보를 입력해주세요.'
+        },
+        spanTextOption: 1,
+        explanation:
+          '입점 신청 후 브랜디 담당자가 연락을 드릴 수 있으니 정확한 정보를 기입해주세요.'
+      },
       sellerCategories: {
         name: 'sellerCategory',
         selectedCateory: null,
         list: [
-          '쇼핑몰',
-          '마켓',
-          '로드샵',
-          '디자이너브랜드',
-          '제너럴브랜드',
-          '내셔널브랜드',
-          '뷰티'
+          { categoryId: 1, label: '쇼핑몰' },
+          { categoryId: 2, label: '마켓' },
+          { categoryId: 3, label: '로드샵' },
+          { categoryId: 4, label: '디자이너브랜드' },
+          { categoryId: 5, label: '제너럴브랜드' },
+          { categoryId: 6, label: '내셔널브랜드' },
+          { categoryId: 7, label: '뷰티' }
         ]
       },
-      sellerInfoInputList: [
-        {
-          id: 'sellerNameKo',
-          type: 'text',
-          placeholder: '셀러명 (상호)',
-          sellerNameKoValue: '',
-          sellerNameKoIsValid: true,
-          iconClass: 'fas fa-font',
-          spanText: {
-            1: '한글,영문,숫자만 입력해주세요.'
-          },
-          spanTextOption: 1
+      sellerNameKo: {
+        id: 'sellerNameKo',
+        type: 'text',
+        placeholder: '셀러명 (상호)',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-font',
+        spanText: {
+          1: '한글,영문,숫자만 입력해주세요.'
         },
-        {
-          id: 'sellerNameEng',
-          type: 'text',
-          placeholder: '영문 셀러명 (영문상호)',
-          sellerNameEngValue: '',
-          sellerNameEngIsValid: true,
-          iconClass: 'fas fa-font',
-          spanText: {
-            1: '셀러 영문명은 소문자만 입력가능합니다.'
-          },
-          spanTextOption: 1
+        spanTextOption: 1
+      },
+      sellerNameEng: {
+        id: 'sellerNameEng',
+        type: 'text',
+        placeholder: '영문 셀러명 (영문상호)',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-font',
+        spanText: {
+          1: '셀러 영문명은 소문자만 입력가능합니다.'
         },
-        {
-          id: 'csContact',
-          type: 'text',
-          placeholder: '고객센터 전화번호',
-          csContactValue: '',
-          csContactIsValid: true,
-          iconClass: 'fas fa-phone',
-          spanText: {
-            1: '고객센터 전화번호는 숫자와 하이픈만 입력가능합니다.'
-          },
-          spanTextOption: 1
-        }
-      ]
+        spanTextOption: 1
+      },
+      csContact: {
+        id: 'csContact',
+        type: 'text',
+        placeholder: '고객센터 전화번호',
+        value: '',
+        isValid: true,
+        iconClass: 'fas fa-phone',
+        spanText: {
+          1: '고객센터 전화번호는 숫자와 하이픈만 입력가능합니다.'
+        },
+        spanTextOption: 1
+      }
     };
   },
   methods: {
     isAccountValid() {
-      const inputId = this.signupInfoInputList[0];
-      const inputIdValue = 'accountValue';
-      const inputIdIsValid = 'accountIsValid';
+      const inputId = this.account;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
-        const isInputEntered = inputId[inputIdValue].length > 0;
+        const isInputEntered = inputId.value.length > 0;
         const isAccountAvailable = !this.existingAccounts.includes(
-          inputId[inputIdValue]
+          inputId.value
         );
-        const isAccountLengthValid = inputId[inputIdValue].length >= 5;
+        const isAccountLengthValid = inputId.value.length >= 5;
         const accountIdValidation = /^([A-Za-z0-9])([A-Za-z0-9_-]){4,19}$/;
-        const isAccountIdValid = accountIdValidation.test(
-          inputId[inputIdValue]
-        );
-        const isValid =
+        const isAccountIdValid = accountIdValidation.test(inputId.value);
+        const isInputValid =
           isInputEntered &&
           isAccountAvailable &&
           isAccountLengthValid &&
           isAccountIdValid;
 
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
 
-        if (!isValid) {
+        if (!isInputValid) {
           !isAccountAvailable || (!isAccountAvailable && !isAccountLengthValid)
             ? (inputId.spanTextOption = 1)
             : !isAccountLengthValid
@@ -229,101 +231,76 @@ export default {
       }
     },
     isPwValid() {
-      const inputId = this.signupInfoInputList[1];
-      const inputIdValue = 'passwordValue';
-      const inputIdIsValid = 'passwordIsValid';
+      const inputId = this.password;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
         const pwValidation = /^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[~!@#$%^&*()\-_=+,.<>/?;:'"[{}\]\\|]).{8,20}$/;
-        const isValid = pwValidation.test(inputId[inputIdValue]);
+        const isInputValid = pwValidation.test(inputId.value);
 
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
 
         this.isPwCheckValid();
       }
     },
     isPwCheckValid() {
-      const inputId = this.signupInfoInputList[2];
-      const inputIdValue = 'passwordCheckValue';
-      const inputIdIsValid = 'passwordCheckIsValid';
+      const inputId = this.passwordCheck;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
-        const isValid =
-          this.isPwValid &&
-          this.signupInfoInputList[1].passwordValue === inputId[inputIdValue];
+        const isInputValid =
+          this.isPwValid && this.password.value === inputId.value;
 
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
       }
     },
     isManagerMobileValid() {
-      const inputId = this.managerMobileInput[0];
-      const inputIdValue = 'managerMobileValue';
-      const inputIdIsValid = 'managerMobileIsValid';
+      const inputId = this.managerMobile;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
         const managerMobileValidation = /^(\d{11})$/;
-        const isValid = managerMobileValidation.test(inputId[inputIdValue]);
+        const isInputValid = managerMobileValidation.test(inputId.value);
 
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
       }
     },
     isSellerNameKoValid() {
-      const inputId = this.sellerInfoInputList[0];
-      const inputIdValue = 'sellerNameKoValue';
-      const inputIdIsValid = 'sellerNameKoIsValid';
+      const inputId = this.sellerNameKo;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
         const sellerNameKoValidation = /^([A-Za-z0-9\uac00-\ud7af])+$/;
-        const isValid = sellerNameKoValidation.test(inputId[inputIdValue]);
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        const isInputValid = sellerNameKoValidation.test(inputId.value);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
       }
     },
     isSellerNameEngValid() {
-      const inputId = this.sellerInfoInputList[1];
-      const inputIdValue = 'sellerNameEngValue';
-      const inputIdIsValid = 'sellerNameEngIsValid';
+      const inputId = this.sellerNameEng;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
         const sellerNameEngValidation = /^([a-z])+$/;
-        const isValid = sellerNameEngValidation.test(inputId[inputIdValue]);
+        const isInputValid = sellerNameEngValidation.test(inputId.value);
 
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
       }
     },
     isCsContactValid() {
-      const inputId = this.sellerInfoInputList[2];
-      const inputIdValue = 'csContactValue';
-      const inputIdIsValid = 'csContactIsValid';
+      const inputId = this.csContact;
 
-      if (inputId[inputIdValue].length === 0) {
-        inputId[inputIdIsValid] = true;
+      if (inputId.value.length === 0) {
+        inputId.isValid = true;
       } else {
         const managerMobileValidation = /^([\d-]+)$/;
-        const isValid = managerMobileValidation.test(inputId[inputIdValue]);
+        const isInputValid = managerMobileValidation.test(inputId.value);
 
-        isValid
-          ? (inputId[inputIdIsValid] = true)
-          : (inputId[inputIdIsValid] = false);
+        isInputValid ? (inputId.isValid = true) : (inputId.isValid = false);
       }
     },
     validateInput(inputId) {
@@ -355,13 +332,13 @@ export default {
     },
     validateForm() {
       const validationItemsList = [
-        this.signupInfoInputList[0].accountIsValid,
-        this.signupInfoInputList[1].passwordIsValid,
-        this.signupInfoInputList[2].passwordCheckIsValid,
-        this.managerMobileInput[0].managerMobileIsValid,
-        this.sellerInfoInputList[0].sellerNameKoIsValid,
-        this.sellerInfoInputList[1].sellerNameEngIsValid,
-        this.sellerInfoInputList[2].csContactIsValid
+        this.account.isValid,
+        this.password.isValid,
+        this.passwordCheck.isValid,
+        this.managerMobile.isValid,
+        this.sellerNameKo.isValid,
+        this.sellerNameEng.isValid,
+        this.csContact.isValid
       ];
       const isAllValid = validationItemsList.every((item) => item == true);
 

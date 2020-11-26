@@ -3,8 +3,7 @@
     <div
       class="input-and-icon"
       :class="{
-        invalid:
-          !input[`${input.id}IsValid`] && input[`${input.id}IsValid`] !== null
+        invalid: !input.isValid && input.isValid !== null
       }"
     >
       <i :class="input.iconClass"></i>
@@ -16,12 +15,9 @@
         @input="updateValue"
       />
     </div>
-    <span
-      v-if="!input[`${input.id}IsValid`]"
-      :class="input.id"
-      :id="input.id"
-      >{{ input.spanText[input.spanTextOption] }}</span
-    >
+    <span v-if="!input.isValid" :class="input.id" :id="input.id">{{
+      input.spanText[input.spanTextOption]
+    }}</span>
     <p v-if="input.explanation">{{ input.explanation }}</p>
   </div>
 </template>
