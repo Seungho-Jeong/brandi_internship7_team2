@@ -99,5 +99,31 @@ class UserService:
         :param db: db_connection
         :return: 카테고리 리스트
         """
+
         result = UserDao.seller_category_type(self, db)
         return result
+
+    def get_seller_information(self, db, data):
+        """
+        셀러 상세정보 가져오기
+        :param db: db_connection
+        :param data: seller_id
+        :return: 셀러 상세정보
+        """
+
+        if not data['sql'] == '':
+            data['sql'] = f" WHERE info.seller_id = {data['seller_id']}"
+            result = UserDao.get_seller_information(UserDao, db, data)
+
+            if not result:
+                raise NotExistsException('not exists seller', 400)
+        else:
+            result = UserDao.get_seller_information(UserDao, db, data)
+
+        return result
+
+    def update_seller_information(self, db, data):
+        UserDao.update_seller_information(UserDao, db, data)
+
+    def update_shop_status(self, db, data):
+        UserDao.update_shop_status(UserDao, db, data)
