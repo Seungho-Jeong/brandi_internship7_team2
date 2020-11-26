@@ -21,11 +21,11 @@ class UserDao:
 
     def sign_up(self, db, data):
         """
-
-        :param db:
-        :param data:
-        :return:
+        유저 회원가입
+        :param db: db_connection
+        :param data: request body
         """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO sellers(
@@ -51,6 +51,13 @@ class UserDao:
             """, data)
 
     def sign_in(self, db, data):
+        """
+        유저 로그인
+        :param db: db_connection
+        :param data: request body
+        :return: 유저정보 (아이디, 패스워드)
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT 
@@ -65,6 +72,12 @@ class UserDao:
             return cursor.fetchone()
 
     def create_refresh_token(self, db, data):
+        """
+        리프레시 토큰 생성 시 DB에 저장
+        :param db: db_connection
+        :param data: request body
+        """
+        
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO seller_refresh_token(
@@ -79,6 +92,13 @@ class UserDao:
             """, data)
 
     def get_refresh_token(self, db, data):
+        """
+        해당 계정에 대한 리프레시 토큰 가져오기
+        :param db: db_connection
+        :param data: request body
+        :return: 리프레시 토큰 정보
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -93,6 +113,12 @@ class UserDao:
             return cursor.fetchone()
 
     def update_refresh_token(self, db, data):
+        """
+        리프레시 토큰 만료시 해당 계정의 리프레시 토큰 업데이트(재발급)
+        :param db: db_connection
+        :param data: request body
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 UPDATE 
@@ -105,6 +131,12 @@ class UserDao:
             """, data)
 
     def seller_category_type(self, db):
+        """
+        회원가입 시 셀러 카테고리 정보 가져오기
+        :param db: db_connection
+        :return: 셀러 카테고리 리스트
+        """
+        
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -115,3 +147,83 @@ class UserDao:
             """)
 
             return cursor.fetchall()
+
+    def get_seller_information(self, db, data):
+        """
+        셀러 상세정보 가져오기
+        :param db: db_connection
+        :param data: seller_id
+        :return: 셀러 상세정보
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    info.id,
+                    info.seller_id,
+                    info.shop_status_id,
+                    info.profile_image,
+                    info.short_introduction,
+                    info.long_introduction,
+                    info.background_image,
+                    info.zipcode,
+                    info.address,
+                    date_format(info.cs_opening_time, "%%H:%%i") as cs_opening_time,
+                    date_format(info.cs_closing_time, "%%H:%%i") as cs_closing_time,
+                    info.delivery_information,
+                    info.exchange_refund_information,
+                    seller.account,
+                    seller.seller_name_ko,
+                    seller.seller_name_en,
+                    seller.cs_contact,
+                    status.name as shop_status,
+                    category.name as category
+                FROM
+                    sellers_informations as info
+                LEFT JOIN
+                    sellers as seller ON info.seller_id = seller.id
+                LEFT JOIN
+                    shop_status_type as status ON info.shop_status_id = status.id
+                LEFT JOIN
+                    seller_categories_type as category ON seller.seller_category_id = category.id
+            """ + data['sql'])
+            
+            return cursor.fetchall()
+
+    def update_seller_information(self, db, data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE
+                    sellers_informations as info
+                LEFT JOIN
+                    sellers as seller ON info.seller_id = seller.id
+                SET
+                    info.updated_at = NOW(),
+                    info.profile_image = %(profile_image)s,
+                    info.short_introduction = %(short_introduction)s,
+                    info.long_introduction = %(long_introduction)s,
+                    info.background_image = %(background_image)s,
+                    info.zipcode = %(zipcode)s,
+                    info.address = %(address)s,
+                    info.cs_opening_time = %(cs_opening_time)s,
+                    info.cs_closing_time = %(cs_closing_time)s,
+                    info.delivery_information = %(delivery_information)s,
+                    info.exchange_refund_information = %(exchange_refund_information)s,
+                    info.modifier_id = %(modifier_id)s,
+                    seller.seller_category_id = %(seller_category_id)s,
+                    seller.cs_contact = %(cs_contact)s
+                WHERE
+                    info.seller_id = %(seller_id)s
+            """, data)
+
+    def update_shop_status(self, db, data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE
+                    sellers_informations
+                SET
+                    shop_status_id = %(shop_status_id)s
+                WHERE
+                    seller_id = %(seller_id)s
+            """, data)
+
