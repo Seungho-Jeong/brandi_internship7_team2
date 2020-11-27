@@ -45,7 +45,7 @@ class UserDao:
                     %(seller_name_ko)s,
                     %(seller_name_en)s,
                     %(cs_contact)s,
-                    False,
+                    %(is_master)s,
                     False
                 )
             """, data)
@@ -71,65 +71,6 @@ class UserDao:
 
             return cursor.fetchone()
 
-    def create_refresh_token(self, db, data):
-        """
-        리프레시 토큰 생성 시 DB에 저장
-        :param db: db_connection
-        :param data: request body
-        """
-        
-        with db.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO seller_refresh_token(
-                    seller_id,
-                    refresh_token,
-                    expired_at
-                ) VALUES (
-                    %(seller_id)s,
-                    %(refresh_token)s,
-                    %(expired_at)s
-                )
-            """, data)
-
-    def get_refresh_token(self, db, data):
-        """
-        해당 계정에 대한 리프레시 토큰 가져오기
-        :param db: db_connection
-        :param data: request body
-        :return: 리프레시 토큰 정보
-        """
-
-        with db.cursor() as cursor:
-            cursor.execute("""
-                SELECT
-                    refresh_token,
-                    expired_at
-                FROM
-                    seller_refresh_token
-                WHERE
-                    seller_id = %(id)s
-            """, data)
-
-            return cursor.fetchone()
-
-    def update_refresh_token(self, db, data):
-        """
-        리프레시 토큰 만료시 해당 계정의 리프레시 토큰 업데이트(재발급)
-        :param db: db_connection
-        :param data: request body
-        """
-
-        with db.cursor() as cursor:
-            cursor.execute("""
-                UPDATE 
-                    seller_refresh_token
-                SET
-                    refresh_token = %(refresh_token)s,
-                    expired_at = %(expired_at)s
-                WHERE
-                    seller_id = %(seller_id)s
-            """, data)
-
     def seller_category_type(self, db):
         """
         회원가입 시 셀러 카테고리 정보 가져오기
@@ -147,6 +88,136 @@ class UserDao:
             """)
 
             return cursor.fetchall()
+
+    def get_seller_list_count(self, db, filters):
+        with db.cursor() as cursor:
+            sql = """
+                SELECT
+                    count(distinct info.id) AS count
+                FROM
+                    sellers_informations AS info
+                INNER JOIN
+                    sellers AS seller on info.seller_id = seller.id
+                INNER JOIN
+                    seller_categories_type AS category on seller.seller_category_id = category.id
+                INNER JOIN
+                    shop_status_type AS shop on info.shop_status_id = shop.id
+                LEFT JOIN
+                    managers AS manager on info.seller_id = manager.seller_id
+                WHERE
+                    info.is_delete = False
+                """
+
+            if 'id' in filters:
+                sql += ' AND info.id = %(id)s'
+            if 'account' in filters:
+                sql += ' AND seller.account = %(account)s'
+            if 'name_en' in filters:
+                sql += ' AND seller.seller_name_en = %(name_en)s'
+            if 'name_ko' in filters:
+                sql += ' AND seller.seller_name_ko = %(name_ko)s'
+            if 'manager_name' in filters:
+                sql += ' AND manager.manager_name = %(manager_name)s'
+            if 'manager_mobile' in filters:
+                sql += ' AND manager.manger_mobile = %(manger_mobile)s'
+            if 'manager_email' in filters:
+                sql += ' AND manager.manager_email = %(manager_email)s'
+            if 'category' in filters:
+                sql += ' AND category.id = %(category)s'
+            if 'start_date' in filters:
+                sql += ' AND info.created_at >= %(start_date)s'
+            if 'end_date' in filters:
+                sql += '''
+                AND info.created_at <= date_format(%(end_date)s, '%%Y-%%m-%%d 23:59:59')
+                '''
+
+            cursor.execute(sql, filters)
+
+            return cursor.fetchone()
+
+    def get_seller_list(self, db, filters):
+        """
+        셀러 회원 목록 가져오기
+        :param filters: 회원 목록 필터
+        :param db: db_connection
+        :return: 셀러 회원 목록
+        """
+        
+        with db.cursor() as cursor:
+            sql = """
+                SELECT
+                    info.id,
+                    seller.account,
+                    seller.seller_name_en AS name_en,
+                    seller.seller_name_ko AS name_ko,
+                    manager.manager_name,
+                    manager.manager_mobile,
+                    manager.manager_email,
+                    category.name AS category,
+                    date_format(info.created_at, "%%Y-%%m-%%d %%T") AS created_at
+                FROM
+                    sellers_informations AS info
+                INNER JOIN
+                    sellers AS seller on info.seller_id = seller.id
+                INNER JOIN
+                    seller_categories_type AS category on seller.seller_category_id = category.id
+                INNER JOIN
+                    shop_status_type AS shop on info.shop_status_id = shop.id
+                LEFT JOIN
+                    managers AS manager on info.seller_id = manager.seller_id
+                WHERE
+                    info.is_delete = False
+                """
+
+            if 'id' in filters:
+                sql += ' AND info.id = %(id)s'
+            if 'account' in filters:
+                sql += ' AND seller.account = %(account)s'
+            if 'name_en' in filters:
+                sql += ' AND seller.seller_name_en = %(name_en)s'
+            if 'name_ko' in filters:
+                sql += ' AND seller.seller_name_ko = %(name_ko)s'
+            if 'manager_name' in filters:
+                sql += ' AND manager.manager_name = %(manager_name)s'
+            if 'manager_mobile' in filters:
+                sql += ' AND manager.manger_mobile = %(manger_mobile)s'
+            if 'manager_email' in filters:
+                sql += ' AND manager.manager_email = %(manager_email)s'
+            if 'category' in filters:
+                sql += ' AND category.id = %(category)s'
+            if 'start_date' in filters:
+                sql += ' AND info.created_at >= %(start_date)s'
+            if 'end_date' in filters:
+                sql += '''
+                AND info.created_at <= date_format(%(end_date)s, '%%Y-%%m-%%d 23:59:59')
+                '''
+
+            sql += ' GROUP BY info.id'
+            cursor.execute(sql, filters)
+
+            return cursor.fetchall()
+
+    def create_seller_information(self, db, data):
+        """
+        셀러 상세정보 생성
+        회원가입 시 기본값으로 생성
+        :param db: db_connection
+        :param data: seller_id
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO sellers_informations(
+                    seller_id,
+                    modifier_id,
+                    shop_status_id
+                ) 
+                VALUES (
+                    %(id)s,
+                    %(id)s,                                        
+                    1
+                )
+            """, data)
 
     def get_seller_information(self, db, data):
         """
@@ -168,27 +239,34 @@ class UserDao:
                     info.background_image,
                     info.zipcode,
                     info.address,
-                    date_format(info.cs_opening_time, "%%H:%%i") as cs_opening_time,
-                    date_format(info.cs_closing_time, "%%H:%%i") as cs_closing_time,
+                    date_format(info.cs_opening_time, "%%H:%%i") AS cs_opening_time,
+                    date_format(info.cs_closing_time, "%%H:%%i") AS cs_closing_time,
                     info.delivery_information,
                     info.exchange_refund_information,
                     seller.account,
                     seller.seller_name_ko,
                     seller.seller_name_en,
                     seller.cs_contact,
-                    status.name as shop_status,
-                    category.name as category
+                    status.name AS shop_status,
+                    category.name AS category,
+                    manager.manager_name,
+                    manager.manager_mobile,
+                    manager.manager_email
                 FROM
-                    sellers_informations as info
+                    sellers_informations AS info
                 LEFT JOIN
-                    sellers as seller ON info.seller_id = seller.id
+                    sellers AS seller ON info.seller_id = seller.id
                 LEFT JOIN
-                    shop_status_type as status ON info.shop_status_id = status.id
+                    shop_status_type AS status ON info.shop_status_id = status.id
                 LEFT JOIN
-                    seller_categories_type as category ON seller.seller_category_id = category.id
-            """ + data['sql'])
+                    seller_categories_type AS category ON seller.seller_category_id = category.id
+                INNER JOIN
+                    managers AS manager ON seller.id = manager.seller_id
+                WHERE
+                    info.seller_id = %s
+            """, data)
             
-            return cursor.fetchall()
+            return cursor.fetchone()
 
     def update_seller_information(self, db, data):
         with db.cursor() as cursor:
@@ -196,7 +274,7 @@ class UserDao:
                 UPDATE
                     sellers_informations as info
                 LEFT JOIN
-                    sellers as seller ON info.seller_id = seller.id
+                    sellers AS seller ON info.seller_id = seller.id
                 SET
                     info.updated_at = NOW(),
                     info.profile_image = %(profile_image)s,
