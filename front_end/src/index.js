@@ -6,5 +6,7 @@ import './styles/common.scss';
 import './styles/reset.scss';
 
 const app = createApp(App);
+app.config.productionTip = false;
+
 app.use(router);
 app.mount('#app');

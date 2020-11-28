@@ -1,7 +1,9 @@
 <template>
   <main>
     <Navbar v-if="isNavShown" />
-    <router-view></router-view>
+    <div v-if="!isNavShown" class="content">
+      <router-view></router-view>
+    </div>
   </main>
 </template>
 

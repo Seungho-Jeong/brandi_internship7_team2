@@ -83,8 +83,6 @@ body {
     width: 380px;
     height: 518px;
     box-shadow: 0 4px 31px 0 rgba(0, 0, 0, 0.1);
-    h2 {
-    }
 
     form {
       input {
