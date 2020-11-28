@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 
 import Login from './pages/Login.vue';
 import Signup from './pages/Signup.vue';
@@ -7,7 +7,7 @@ import Seller from './pages/ManageMembers/Seller.vue';
 import Order from './pages/manageorders/Order.vue';
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',
@@ -27,12 +27,13 @@ const router = createRouter({
     },
     {
       path: '/seller',
+      params: 'seller_my_page/:seller-id',
       component: Seller
     },
     {
       path: '/order',
       component: Order,
-      children: [{ path: ':manageOrderStatus', component: Order }]
+      children: [{ path: ':manage_order_status', component: Order }]
     }
   ]
 });

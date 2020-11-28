@@ -83,8 +83,8 @@ eslint-disable vue/require-v-for-key */
 </template>
 
 <script>
-import InputWithSpan from '../components/InputWithSpan.vue';
-import RadioInputs from '../components/RadioInputs.vue';
+import InputWithSpan from '../components/reusables/InputWithSpan.vue';
+import RadioInputs from '../components/reusables/RadioInputs.vue';
 
 export default {
   name: 'Signup',

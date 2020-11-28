@@ -18,10 +18,7 @@ module.exports = {
         test: /\.m?js$/i,
         exclude: (file) => /node_modules/.test(file) && !/\.vue\.js/.test(file),
         use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env']
-          }
+          loader: 'babel-loader'
         }
       },
       {
@@ -33,6 +30,21 @@ module.exports = {
       {
         test: /\.(css|scss)$/i,
         use: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      {
+        test: /\.less$/i,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: 'less-loader',
+            options: {
+              lessOptions: {
+                javascriptEnabled: true
+              }
+            }
+          }
+        ]
       },
       {
         test: /\.(png|jpe?g|gif|svg)$/i,
@@ -62,8 +74,9 @@ module.exports = {
   devServer: {
     port: 9000,
     contentBase: path.resolve(__dirname, 'dist'),
+    historyApiFallback: true,
+    stats: 'minimal',
     inline: true,
-    stats: 'errors-only',
     open: true,
     hot: true
   }
