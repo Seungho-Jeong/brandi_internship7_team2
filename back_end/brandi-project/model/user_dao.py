@@ -10,9 +10,13 @@ class UserDao:
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
-                   id
+                   seller.id,
+                   seller.is_master,
+                   info.is_delete
                 FROM 
-                    sellers
+                    sellers AS seller
+                INNER JOIN
+                    sellers_informations AS info ON seller.id = info.seller_id
                 WHERE 
                    account = %(account)s
             """, data)
@@ -50,17 +54,20 @@ class UserDao:
                 )
             """, data)
 
+            return cursor.lastrowid
+
     def sign_in(self, db, data):
         """
         유저 로그인
         :param db: db_connection
         :param data: request body
-        :return: 유저정보 (아이디, 패스워드)
+        :return: 유저정보 (id)
         """
 
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT 
+                    id,
                     account,
                     password
                 FROM 
@@ -112,13 +119,13 @@ class UserDao:
                 FROM
                     sellers_informations AS info
                 INNER JOIN
-                    sellers AS seller on info.seller_id = seller.id
+                    sellers AS seller ON info.seller_id = seller.id
                 INNER JOIN
-                    seller_categories_type AS category on seller.seller_category_id = category.id
+                    seller_categories_type AS category ON seller.seller_category_id = category.id
                 INNER JOIN
-                    shop_status_type AS shop on info.shop_status_id = shop.id
+                    shop_status_type AS shop ON info.shop_status_id = shop.id
                 LEFT JOIN
-                    managers AS manager on info.seller_id = manager.seller_id
+                    managers AS manager ON info.seller_id = manager.seller_id
                 WHERE
                     info.is_delete = False
                 """
@@ -151,12 +158,12 @@ class UserDao:
 
             return cursor.rowcount, cursor.fetchall()
 
-    def create_seller_information(self, db, data):
+    def create_seller_information(self, db, seller_id):
         """
         셀러 상세정보 생성
         회원가입 시 기본값으로 생성
         :param db: db_connection
-        :param data: seller_id
+        :param seller_id: seller_id
         """
 
         with db.cursor() as cursor:
@@ -167,17 +174,17 @@ class UserDao:
                     shop_status_id
                 ) 
                 VALUES (
-                    %(id)s,
-                    %(id)s,                                        
+                    %s,
+                    %s,                                        
                     1
                 )
-            """, data)
+            """, (seller_id, seller_id))
 
-    def get_seller_information(self, db, data):
+    def get_seller_information(self, db, seller_id):
         """
         셀러 상세정보 가져오기
         :param db: db_connection
-        :param data: seller_id
+        :param seller_id: seller_id
         :return: 셀러 상세정보
         """
 
@@ -208,21 +215,28 @@ class UserDao:
                     manager.manager_email
                 FROM
                     sellers_informations AS info
-                LEFT JOIN
-                    sellers AS seller ON info.seller_id = seller.id
-                LEFT JOIN
-                    shop_status_type AS status ON info.shop_status_id = status.id
-                LEFT JOIN
-                    seller_categories_type AS category ON seller.seller_category_id = category.id
                 INNER JOIN
-                    managers AS manager ON seller.id = manager.seller_id
+                    sellers AS seller ON info.seller_id = seller.id
+                INNER JOIN
+                    shop_status_type AS status ON info.shop_status_id = status.id
+                INNER JOIN
+                    seller_categories_type AS category ON seller.seller_category_id = category.id
+                LEFT JOIN
+                    managers AS manager ON info.seller_id = manager.seller_id
                 WHERE
+                    info.is_delete = False AND 
                     info.seller_id = %s
-            """, data)
+            """, seller_id)
             
             return cursor.fetchone()
 
     def update_seller_information(self, db, data):
+        """
+        셀러 상세정보 수정
+        :param db: db_connection
+        :param data: 셀러 상세정보
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 UPDATE
@@ -249,6 +263,12 @@ class UserDao:
             """, data)
 
     def update_shop_status(self, db, data):
+        """
+        셀러 상태(입점상태) 수정
+        :param db: db_connection
+        :param data: 셀러 상태
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 UPDATE
@@ -259,3 +279,118 @@ class UserDao:
                     seller_id = %(seller_id)s
             """, data)
 
+    def create_managers(self, db, data):
+        """
+        담당 매니저 테이블 생성
+        :param db: db_connection
+        :param data: 매니저 정보
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO managers(
+                    seller_id,
+                    manager_name,
+                    manager_mobile,
+                    manager_email,
+                    modifier_id
+                ) VALUES (
+                    %(seller_id)s,
+                    %(manager_name)s,
+                    %(manager_mobile)s,
+                    %(manager_email)s,
+                    %(seller_id)s
+                )
+            """, data)
+
+    def create_seller_logs(self, db, data):
+        """
+        셀러 로그 생성 (생성시, 수정시)
+        :param db: db_connection
+        :param data: 셀러 정보
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO seller_logs(
+                    seller_id,
+                    shop_status_id,
+                    account,
+                    seller_name_ko,
+                    seller_name_en,
+                    cs_contact,
+                    manager_name,
+                    manager_mobile,
+                    manager_email,
+                    profile_image,
+                    short_introduction,
+                    long_introduction,
+                    background_image,
+                    zipcode,
+                    address,
+                    cs_opening_time,
+                    cs_closing_time,
+                    delivery_information,
+                    exchange_refund_information
+                ) VALUES(
+                    %(seller_id)s,
+                    %(shop_status_id)s,
+                    %(account)s,
+                    %(seller_name_ko)s,
+                    %(seller_name_en)s,
+                    %(cs_contact)s,
+                    %(manager_name)s,
+                    %(manager_mobile)s,
+                    %(manager_email)s,
+                    %(profile_image)s,
+                    %(short_introduction)s,
+                    %(long_introduction)s,
+                    %(background_image)s,
+                    %(zipcode)s,
+                    %(address)s,
+                    %(cs_opening_time)s,
+                    %(cs_closing_time)s,
+                    %(delivery_information)s,
+                    %(exchange_refund_information)s
+                )
+            """, data)
+
+    def get_seller_logs(self, db, seller_id):
+        """
+        가장 최근의 셀러 로그 정보 가져오기
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return: 최근 셀러 로그 정보
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    seller_id,
+                    shop_status_id,
+                    account,
+                    seller_name_ko,
+                    seller_name_en,
+                    cs_contact,
+                    manager_name,
+                    manager_mobile,
+                    manager_email,
+                    profile_image,
+                    short_introduction,
+                    long_introduction,
+                    background_image,
+                    zipcode,
+                    address,
+                    cs_opening_time,
+                    cs_closing_time,
+                    delivery_information,
+                    exchange_refund_information
+                FROM
+                    seller_logs
+                WHERE
+                    seller_id = %s
+                ORDER BY
+                    id DESC LIMIT 1
+            """, seller_id)
+
+            return cursor.fetchone()

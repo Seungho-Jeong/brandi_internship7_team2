@@ -1,5 +1,5 @@
-from .user_view import UserView
+from .user_view import user_endpoints
 
 __all__ = [
-    UserView
+    user_endpoints
 ]
