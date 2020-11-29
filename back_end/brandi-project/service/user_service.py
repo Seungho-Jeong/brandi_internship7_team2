@@ -2,83 +2,62 @@ import jwt
 import bcrypt
 from datetime import datetime, timedelta
 
-from model          import UserDao
-from util.exception import NotExistsException, ExistsException, JwtTokenException
+from util.exception import NotExistsException, ExistsException
 from config         import SECRET, ALGORITHM
 
 
 class UserService:
+    def __init__(self, user_dao):
+        self.user_dao = user_dao
+
     def sign_up(self, db, data):
         """
         유저 회원가입
         이미 존재하는 아이디는 확인 후 예외처리,
         패스워드는 암호화하여 DB에 저장
         :param db: db_connection
-        :param data: request body
+        :param data: 회원가입 정보
         """
 
-        user_dao = UserDao()
-
-        if user_dao.check_account(db, data):
+        if self.user_dao.check_account(db, data):
             raise ExistsException('already existed account', 409)
 
         hashed_pw = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
         data['password'] = hashed_pw.decode('utf-8')
 
-        user_dao.sign_up(db, data)
+        seller_id = self.user_dao.sign_up(db, data)
 
-        account = user_dao.check_account(db, data)
         if not data['is_master']:
-            user_dao.create_seller_information(db, account)
+            self.user_dao.create_seller_information(db, seller_id)
+
+        # 로그 테이블 생성
+        user_info = self.user_dao.get_seller_information(db, seller_id)
+        self.user_dao.create_seller_logs(db, user_info)
 
     def sign_in(self, db, data):
         """
         유저 로그인
         해당 유저가 존재하는지 체크하고 패스워드 일치 여부 확인,
-        access_token 만료 시에는 재발급
+        access_token 발급
         :param db: db_connection
-        :param data: request body
-        :return: access_token, refresh_token
+        :param data: account(계정이름), password
+        :return: access_token
         """
 
-        user_dao = UserDao()
-        user_id = user_dao.check_account(db, data)
+        user_id = self.user_dao.check_account(db, data)
 
         if not user_id:
             raise NotExistsException('not exists account', 400)
 
-        user_info = user_dao.sign_in(db, data)
+        user_info = self.user_dao.sign_in(db, data)
 
         if not bcrypt.checkpw(data['password'].encode('utf-8'), user_info['password'].encode('utf-8')):
             raise NotExistsException('invalid account', 400)
 
-        user_info['exp'] = datetime.now() + timedelta(seconds=30)
-        access_token = jwt.encode(user_info, SECRET, algorithm=ALGORITHM).decode('utf-8')
+        exp = datetime.utcnow() + timedelta(minutes=30)
+        access_token = jwt.encode({'account' : user_info['account'], 'exp' : exp}, SECRET, algorithm=ALGORITHM)
 
-        return access_token
-
-    def reissuance_token(self, db, data):
-        """
-        access_token 만료 시 토큰 재발급
-        :param db: db_connection
-        :param data: request body
-        :return: access_token
-        """
-
-        user_dao = UserDao()
-        user_id = user_dao.check_account(db, data)
-        token = user_dao.get_refresh_token(db, user_id)
-
-        if token['refresh_token'] != data['refresh_token']:
-            raise JwtTokenException('invalid token', 401)
-        elif token['expired_at'] < datetime.now():
-            raise JwtTokenException('expired token', 401)
-
-        user_info = data
-        user_info['exp'] = datetime.now() + timedelta(seconds=30)
-        access_token = jwt.encode(user_info, SECRET, algorithm=ALGORITHM).decode('utf-8')
-
-        return access_token
+        return access_token.decode('utf-8')
 
     def seller_category_type(self, db):
         """
@@ -87,8 +66,7 @@ class UserService:
         :return: 카테고리 리스트
         """
 
-        user_dao = UserDao()
-        result = user_dao.seller_category_type(db)
+        result = self.user_dao.seller_category_type(db)
         return result
 
     def get_seller_list(self, db, filters):
@@ -99,36 +77,81 @@ class UserService:
         :return: 셀러 회원 목록
         """
 
-        user_dao = UserDao()
-        seller_detail = user_dao.get_seller_list(db, filters)
+        user_info = self.user_dao.get_seller_list(db, filters)
 
         sellers = {
-            'count'       : seller_detail[0],
-            'seller_list' : seller_detail[1]
+            'count'       : user_info[0],
+            'seller_list' : user_info[1]
         }
 
         return sellers
 
-    def get_seller_information(self, db, data):
+    def get_seller_information(self, db, seller_id):
         """
         셀러 상세정보 가져오기
         :param db: db_connection
-        :param data: seller_id
+        :param seller_id: seller_id
         :return: 셀러 상세정보
         """
 
-        user_dao = UserDao()
-        result = user_dao.get_seller_information(db, data)
+        user_info = self.user_dao.get_seller_information(db, seller_id)
 
-        if not result:
+        if not user_info:
             raise NotExistsException('not exists seller', 400)
 
-        return result
+        return user_info
 
-    def update_seller_information(self, db, data):
-        user_dao = UserDao()
-        user_dao.update_seller_information(db, data)
+    def update_seller_information(self, db, data, seller_id):
+        """
+        셀러 상세정보 수정
+        :param db: db_connection
+        :param data: 셀러 상세정보
+        :param seller_id: seller_id
+        """
 
-    def update_shop_status(self, db, data):
-        user_dao = UserDao()
-        user_dao.update_shop_status(db, data)
+        data['seller_id'] = seller_id
+        self.user_dao.update_seller_information(db, data)
+        
+        # 로그 생성
+        user_log = self.user_dao.get_seller_logs(db, seller_id)
+        for key in data:
+            user_log[key] = data[key]
+
+        self.user_dao.create_seller_logs(db, user_log)
+
+    def update_shop_status(self, db, data, seller_id):
+        """
+        셀러 상태(입점상태) 수정
+        :param db: db_connection
+        :param data: 셀러 상태
+        :param seller_id: seller_id
+        """
+
+        data['seller_id'] = seller_id
+        self.user_dao.update_shop_status(db, data)
+        
+        # 로그 생성
+        user_log = self.user_dao.get_seller_logs(db, seller_id)
+        for key in data:
+            user_log[key] = data[key]
+
+        self.user_dao.create_seller_logs(db, user_log)
+
+    def create_managers(self, db, data, seller_id):
+        """
+        담당 매니저 생성
+        :param db: db_connection
+        :param data: 매니저 정보
+        :param seller_id: seller_id
+        """
+
+        data['seller_id'] = seller_id
+        self.user_dao.create_managers(db, data)
+
+        # 로그 생성
+        user_log = self.user_dao.get_seller_logs(db, seller_id)
+        user_log['manager_name'] = data['manager_name']
+        user_log['manager_mobile'] = data['manager_mobile']
+        user_log['manager_email'] = data['manager_email']
+
+        self.user_dao.create_seller_logs(db, user_log)
