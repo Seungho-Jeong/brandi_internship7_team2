@@ -100,24 +100,11 @@ class UserService:
         """
 
         user_dao = UserDao()
-        count = user_dao.get_seller_list_count(db, filters)
         seller_detail = user_dao.get_seller_list(db, filters)
 
-        seller_list = [{
-            'id'             : seller['id'],
-            'account'        : seller['account'],
-            'name_en'        : seller['name_en'],
-            'name_ko'        : seller['name_ko'],
-            'manager_name'   : seller['manager_name'],
-            'manager_mobile' : seller['manager_mobile'],
-            'manager_email'  : seller['manager_email'],
-            'category'       : seller['category'],
-            'created_at'     : seller['created_at']
-        } for seller in seller_detail]
-
         sellers = {
-            'count'       : count['count'],
-            'seller_list' : seller_list
+            'count'       : seller_detail[0],
+            'seller_list' : seller_detail[1]
         }
 
         return sellers

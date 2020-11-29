@@ -89,52 +89,6 @@ class UserDao:
 
             return cursor.fetchall()
 
-    def get_seller_list_count(self, db, filters):
-        with db.cursor() as cursor:
-            sql = """
-                SELECT
-                    count(distinct info.id) AS count
-                FROM
-                    sellers_informations AS info
-                INNER JOIN
-                    sellers AS seller on info.seller_id = seller.id
-                INNER JOIN
-                    seller_categories_type AS category on seller.seller_category_id = category.id
-                INNER JOIN
-                    shop_status_type AS shop on info.shop_status_id = shop.id
-                LEFT JOIN
-                    managers AS manager on info.seller_id = manager.seller_id
-                WHERE
-                    info.is_delete = False
-                """
-
-            if 'id' in filters:
-                sql += ' AND info.id = %(id)s'
-            if 'account' in filters:
-                sql += ' AND seller.account = %(account)s'
-            if 'name_en' in filters:
-                sql += ' AND seller.seller_name_en = %(name_en)s'
-            if 'name_ko' in filters:
-                sql += ' AND seller.seller_name_ko = %(name_ko)s'
-            if 'manager_name' in filters:
-                sql += ' AND manager.manager_name = %(manager_name)s'
-            if 'manager_mobile' in filters:
-                sql += ' AND manager.manger_mobile = %(manger_mobile)s'
-            if 'manager_email' in filters:
-                sql += ' AND manager.manager_email = %(manager_email)s'
-            if 'category' in filters:
-                sql += ' AND category.id = %(category)s'
-            if 'start_date' in filters:
-                sql += ' AND info.created_at >= %(start_date)s'
-            if 'end_date' in filters:
-                sql += '''
-                AND info.created_at <= date_format(%(end_date)s, '%%Y-%%m-%%d 23:59:59')
-                '''
-
-            cursor.execute(sql, filters)
-
-            return cursor.fetchone()
-
     def get_seller_list(self, db, filters):
         """
         셀러 회원 목록 가져오기
@@ -195,7 +149,7 @@ class UserDao:
             sql += ' GROUP BY info.id'
             cursor.execute(sql, filters)
 
-            return cursor.fetchall()
+            return cursor.rowcount, cursor.fetchall()
 
     def create_seller_information(self, db, data):
         """
