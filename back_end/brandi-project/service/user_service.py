@@ -8,9 +8,6 @@ from config         import SECRET, ALGORITHM
 
 
 class UserService:
-    def __init__(self, user_dao):
-        self.user_dao = user_dao
-
     def sign_up(self, db, data):
         """
         유저 회원가입
@@ -20,67 +17,57 @@ class UserService:
         :param data: request body
         """
 
-        if UserDao.check_account(self, db, data):
+        user_dao = UserDao()
+
+        if user_dao.check_account(db, data):
             raise ExistsException('already existed account', 409)
 
         hashed_pw = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
         data['password'] = hashed_pw.decode('utf-8')
 
-        UserDao.sign_up(self, db, data)
+        user_dao.sign_up(db, data)
+
+        account = user_dao.check_account(db, data)
+        if not data['is_master']:
+            user_dao.create_seller_information(db, account)
 
     def sign_in(self, db, data):
         """
         유저 로그인
         해당 유저가 존재하는지 체크하고 패스워드 일치 여부 확인,
-        access_token과 refresh_token을 발급,
-        refresh_token 기한 만료시에는 재발급
+        access_token 만료 시에는 재발급
         :param db: db_connection
         :param data: request body
         :return: access_token, refresh_token
         """
-        
-        user_id = UserDao.check_account(self, db, data)
+
+        user_dao = UserDao()
+        user_id = user_dao.check_account(db, data)
 
         if not user_id:
             raise NotExistsException('not exists account', 400)
 
-        user_info = UserDao.sign_in(self, db, data)
+        user_info = user_dao.sign_in(db, data)
 
         if not bcrypt.checkpw(data['password'].encode('utf-8'), user_info['password'].encode('utf-8')):
             raise NotExistsException('invalid account', 400)
 
-        time = datetime.now()
-        user_info['exp'] = time + timedelta(seconds=30)
+        user_info['exp'] = datetime.now() + timedelta(seconds=30)
         access_token = jwt.encode(user_info, SECRET, algorithm=ALGORITHM).decode('utf-8')
 
-        user_info['exp'] = time + timedelta(hours=1)
-        refresh_token = jwt.encode(user_info, SECRET, algorithm=ALGORITHM).decode('utf-8')
-
-        token = {
-            'seller_id'     : user_id['id'],
-            'access_token'  : access_token,
-            'refresh_token' : refresh_token,
-            'expired_at'    : time + timedelta(hours=1)
-        }
-
-        if UserDao.get_refresh_token(self, db, user_id):
-            UserDao.update_refresh_token(self, db, token)
-        else:
-            UserDao.create_refresh_token(self, db, token)
-
-        return {'access_token' : token['access_token'], 'refresh_token' : token['refresh_token']}
+        return access_token
 
     def reissuance_token(self, db, data):
         """
         access_token 만료 시 토큰 재발급
-        유저가 가지고있는 refresh_token과 비교하여 유효성, 기한만료 체크
         :param db: db_connection
         :param data: request body
         :return: access_token
         """
 
-        user_id = UserDao.check_account(self, db, data)
-        token = UserDao.get_refresh_token(self, db, user_id)
+        user_dao = UserDao()
+        user_id = user_dao.check_account(db, data)
+        token = user_dao.get_refresh_token(db, user_id)
 
         if token['refresh_token'] != data['refresh_token']:
             raise JwtTokenException('invalid token', 401)
@@ -100,8 +87,27 @@ class UserService:
         :return: 카테고리 리스트
         """
 
-        result = UserDao.seller_category_type(self, db)
+        user_dao = UserDao()
+        result = user_dao.seller_category_type(db)
         return result
+
+    def get_seller_list(self, db, filters):
+        """
+        셀러 회원 목록 가져오기
+        :param filters: 회원 목록 필터
+        :param db: db_connection
+        :return: 셀러 회원 목록
+        """
+
+        user_dao = UserDao()
+        seller_detail = user_dao.get_seller_list(db, filters)
+
+        sellers = {
+            'count'       : seller_detail[0],
+            'seller_list' : seller_detail[1]
+        }
+
+        return sellers
 
     def get_seller_information(self, db, data):
         """
@@ -111,19 +117,18 @@ class UserService:
         :return: 셀러 상세정보
         """
 
-        if not data['sql'] == '':
-            data['sql'] = f" WHERE info.seller_id = {data['seller_id']}"
-            result = UserDao.get_seller_information(UserDao, db, data)
+        user_dao = UserDao()
+        result = user_dao.get_seller_information(db, data)
 
-            if not result:
-                raise NotExistsException('not exists seller', 400)
-        else:
-            result = UserDao.get_seller_information(UserDao, db, data)
+        if not result:
+            raise NotExistsException('not exists seller', 400)
 
         return result
 
     def update_seller_information(self, db, data):
-        UserDao.update_seller_information(UserDao, db, data)
+        user_dao = UserDao()
+        user_dao.update_seller_information(db, data)
 
     def update_shop_status(self, db, data):
-        UserDao.update_shop_status(UserDao, db, data)
+        user_dao = UserDao()
+        user_dao.update_shop_status(db, data)

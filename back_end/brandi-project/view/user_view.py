@@ -10,11 +10,8 @@ from service        import UserService
 class UserView:
     user_app = Blueprint('user_app', __name__, url_prefix='/user')
 
-    def __init__(self, user_service):
-        self.user_service = user_service
-
     @user_app.route('/signup', methods=['POST'])
-    def sign_up(self):
+    def sign_up(*args):
         """
         유저 회원가입
         """
@@ -24,7 +21,8 @@ class UserView:
             data = request.json
             db = db_connection()
 
-            UserService.sign_up(UserService, db, data)
+            user_service = UserService()
+            user_service.sign_up(db, data)
             db.commit()
 
             return json.dumps({'message' : 'success'}), 200
@@ -33,10 +31,10 @@ class UserView:
             return json.dumps({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return json.dumps({'message' : 'key_error'.format(e)}), 400
+            return json.dumps({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return json.dumps({'message' : 'error'.format(e)}), 500
+            return json.dumps({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -53,10 +51,11 @@ class UserView:
             data = request.json
             db = db_connection()
 
-            token = UserService.sign_in(UserService, db, data)
+            user_service = UserService()
+            access_token = user_service.sign_in(db, data)
             db.commit()
 
-            return json.dumps({'message' : 'success', 'token' : token}), 200
+            return json.dumps({'message' : 'success', 'access_token' : access_token}), 200
         except NotExistsException as e:
             db.rollback()
             return json.dumps({'message' : e.message}), e.status_code
@@ -82,7 +81,8 @@ class UserView:
             data = request.json
             db = db_connection()
 
-            token = UserService.reissuance_token(UserService, db, data)
+            user_service = UserService()
+            token = user_service.reissuance_token(db, data)
 
             return json.dumps({'message': 'success', 'access_token' : token}), 200
         except JwtTokenException as e:
@@ -106,7 +106,8 @@ class UserView:
         try:
             db = db_connection()
 
-            result = UserService.seller_category_type(UserService, db)
+            user_service = UserService()
+            result = user_service.seller_category_type(db)
 
             return json.dumps({'message' : 'success', 'category_list' : result}), 200
         except Exception as e:
@@ -120,13 +121,13 @@ class UserView:
         db = None
         try:
             db = db_connection()
+            filters = dict(request.args)
 
-            data = {'sql' : ''}
-            result = UserService.get_seller_information(UserService, db, data)
+            user_service = UserService()
+            sellers = user_service.get_seller_list(db, filters)
 
-            return json.dumps({'message': 'success', 'seller_info': result}, ensure_ascii=False), 200
-        except NotExistsException as e:
-            return json.dumps({'message': e.message}), e.status_code
+            return json.dumps({'message': 'success', 'list_count' : sellers['count'],
+                               'seller_list': sellers['seller_list']}, ensure_ascii=False), 200
         except Exception as e:
             return json.dumps({'message': 'error {}'.format(e)}), 500
         finally:
@@ -144,9 +145,8 @@ class UserView:
         try:
             db = db_connection()
 
-            data = {'seller_id' : seller_id}
-            result = UserService.get_seller_information(UserService, db, data)
-            # result = self.user_service.get_seller_information(db, data)
+            user_service = UserService()
+            result = user_service.get_seller_information(db, seller_id)
 
             return json.dumps({'message': 'success', 'seller_info': result}, ensure_ascii=False), 200
         except NotExistsException as e:
@@ -165,7 +165,8 @@ class UserView:
             db = db_connection()
 
             data['seller_id'] = seller_id
-            UserService.update_seller_information(UserService, db, data)
+            user_service = UserService()
+            user_service.update_seller_information(db, data)
 
             db.commit()
 
@@ -187,7 +188,8 @@ class UserView:
             db = db_connection()
 
             data = {'seller_id' : seller_id}
-            UserService.update_shop_status(UserService, db, data)
+            user_service = UserService()
+            user_service.update_shop_status(db, data)
 
             db.commit()
 
