@@ -9,6 +9,14 @@
       menuLevel3="셀러 회원 리스트"
     />
     <PageSection icon="list" sectionTitle="셀러 회원 리스트">
+      <a-pagination
+        class="pagination top"
+        size="small"
+        :total="sellerData.length"
+        :show-total="(total) => `Total ${total} items`"
+        :page-size-options="['10', '20', '50', '100', '150']"
+        show-size-changer
+      />
       <div class="table-container">
         <table>
           <thead>
@@ -35,7 +43,6 @@
                   v-if="showFilterInput(column.key)"
                   class="filter-input"
                   type="search"
-                  name="search"
                   :id="column.key"
                 />
                 <select
@@ -52,6 +59,7 @@
           </thead>
           <tbody>
             <tr
+              class="data-row"
               v-for="seller in sellerData"
               :key="seller.seller_id"
               :id="seller.seller_id"
@@ -64,7 +72,13 @@
                 />
               </td>
               <td>{{ seller.seller_id }}</td>
-              <td>{{ seller.account }}</td>
+              <td>
+                <router-link
+                  :to="`/seller/seller_my_page/${seller.seller_id}`"
+                  class="seller-link"
+                  >{{ seller.account }}</router-link
+                >
+              </td>
               <td>{{ seller.seller_name_en }}</td>
               <td>{{ seller.seller_name_ko }}</td>
               <td>{{ seller.manager_name }}</td>
@@ -76,22 +90,33 @@
               <td>
                 <button
                   class="action"
-                  :class="action"
+                  :class="`type${action.key}`"
                   v-for="action in seller.actions"
-                  :key="action"
+                  :key="action.key"
                 >
-                  {{ action }}
+                  {{ action.label }}
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <a-pagination
+        class="pagination bottom"
+        size="small"
+        :total="sellerData.length"
+        :show-total="(total) => `Total ${total} items`"
+        :page-size-options="['10', '20', '50', '100', '150']"
+        show-size-changer
+      />
     </PageSection>
   </main>
 </template>
 
 <script>
+import { Pagination } from 'ant-design-vue';
+import 'ant-design-vue/dist/antd.less';
+
 import PageHeading from '../../components/reusables/PageHeading.vue';
 import PageBar from '../../components/reusables/PageBar.vue';
 import PageSection from '../../components/reusables/PageSection.vue';
@@ -174,16 +199,159 @@ const columns = [
 ];
 
 const shopStatusActionMap = {
-  입점대기: ['입점 승인', '입점 거절'],
-  입점: ['휴점 신청', '퇴점 신청 처리'],
-  휴점: ['휴점 해제', '퇴점 신청 처리'],
-  퇴점대기: ['휴점 신청', '퇴점 확정 처리', '퇴점 철회 처리'],
+  입점대기: [
+    { key: 1, label: '입점 승인' },
+    { key: 2, label: '입점 거절' }
+  ],
+  입점: [
+    { key: 3, label: '휴점 신청' },
+    { key: 5, label: '퇴점 신청 처리' }
+  ],
+  휴점: [
+    { key: 4, label: '휴점 해제' },
+    { key: 5, label: '퇴점 신청 처리' }
+  ],
+  퇴점대기: [
+    { key: 3, label: '휴점 신청' },
+    { key: 6, label: '퇴점 확정 처리' },
+    { key: 7, label: '퇴점 철회 처리' }
+  ],
   퇴점: []
 };
 
 const sellerData = [
   {
-    seller_id: '3',
+    seller_id: '1221',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1222',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1224',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점대기',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점대기']
+  },
+  {
+    seller_id: '1225',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1227',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '휴점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['휴점']
+  },
+  {
+    seller_id: '1229',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '퇴점대기',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['퇴점대기']
+  },
+  {
+    seller_id: '1230',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1231',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1232',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '퇴점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['퇴점']
+  },
+  {
+    seller_id: '1233',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1234',
     account: 'test_account',
     seller_name_en: 'Test Seller',
     seller_name_ko: '테스트 셀러',
@@ -200,6 +368,7 @@ const sellerData = [
 export default {
   name: 'Account',
   components: {
+    'a-pagination': Pagination,
     PageHeading,
     PageBar,
     PageSection
@@ -232,6 +401,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.pagination {
+  margin: 15px 0;
+}
+
 .table-container {
   overflow: auto;
 }
@@ -249,8 +422,14 @@ table {
       text-align: left;
       vertical-align: middle;
       white-space: nowrap;
-      padding: 0 5px;
+      padding: 0 10px;
       border: 0.5px solid #ddd;
+    }
+    th {
+      font-size: 14px;
+    }
+    td {
+      font-size: 13px;
     }
   }
 
@@ -274,6 +453,42 @@ table {
         border: 1px solid #ddd;
         border-radius: 3px;
       }
+    }
+  }
+
+  tr.data-row {
+    &:nth-child(odd) {
+      background: #eee;
+    }
+    .seller-link {
+      color: #0d628f;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    button.action {
+      font-size: 12px;
+      color: #fff;
+      border-radius: 3px;
+      margin: 2px;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+    button.action.type1 {
+      background: #5bc0de;
+    }
+    button.action.type2,
+    .type5,
+    .type6 {
+      background: #d8534f;
+    }
+    button.action.type3 {
+      background: #f0ad4e;
+    }
+    button.action.type4,
+    .type7 {
+      background: #5db85b;
     }
   }
 }
