@@ -3,7 +3,7 @@
   "plugins": [
     [
       "import", 
-      { "libraryName": "ant-design-vue", "style": "true" }
+      { "libraryName": "ant-design-vue"}
     ]
   ]
 }

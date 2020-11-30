@@ -38,7 +38,7 @@ export default {
 
     .icon {
       color: #666;
-      padding: 0 5px;
+      padding: 0 5px 0 10px;
     }
 
     h3 {

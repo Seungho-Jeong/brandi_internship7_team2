@@ -1,0 +1,153 @@
+export const shopStatusActionMap = {
+  입점대기: ['입점 승인', '입점 거절'],
+  입점: ['휴점 신청', '퇴점 신청 처리'],
+  휴점: ['휴점 해제', '퇴점 신청 처리'],
+  퇴점대기: ['휴점 신청', '퇴점 확정 처리', '퇴점 철회 처리'],
+  퇴점: []
+};
+
+export const sellerData = [
+  {
+    seller_id: '1221',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1222',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1224',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1225',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1227',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1229',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1230',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1231',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1232',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1233',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  },
+  {
+    seller_id: '1234',
+    account: 'test_account',
+    seller_name_en: 'Test Seller',
+    seller_name_ko: '테스트 셀러',
+    manager_name: '홍길동',
+    shop_status: '입점',
+    manager_mobile: '010-0000-0000',
+    manager_email: 'test@testseller.co.kr',
+    seller_type: '쇼핑몰',
+    created_at: '2020-11-01 14:08:55',
+    actions: shopStatusActionMap['입점']
+  }
+];
