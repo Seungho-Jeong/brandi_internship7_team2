@@ -4,9 +4,9 @@ from flask import Flask
 from flask.json import JSONEncoder
 from flask_cors import CORS
 
-from model import UserDao
-from service import UserService
-from view import user_endpoints
+from model import UserDao, ProductDao
+from service import UserService, ProductService
+from view import user_endpoints, product_endpoints
 
 
 class CustomJsonEncoder(JSONEncoder):
@@ -23,11 +23,14 @@ def create_app():
 
     # daos
     user_dao = UserDao()
+    product_dao = ProductDao()
 
     # service
     user_service = UserService(user_dao)
+    product_service = ProductService(product_dao)
 
     # create endpoint
     app.register_blueprint(user_endpoints(user_service))
+    app.register_blueprint(product_endpoints(product_service))
 
     return app
