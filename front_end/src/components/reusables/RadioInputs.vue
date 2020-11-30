@@ -3,11 +3,11 @@
     <input
       type="radio"
       :name="radioObject.name"
-      :id="category.label"
+      :id="category.categoryId"
       :value="modelValue"
-      @input="updateValue"
+      @input="setSelectedRadio"
     />
-    <label :for="category.label">{{ category.label }}</label>
+    <label :for="category.categoryId">{{ category.label }}</label>
   </div>
 </template>
 
@@ -20,8 +20,9 @@ export default {
     return {};
   },
   methods: {
-    updateValue(e) {
-      this.$emit('update:modelValue', e.target.value);
+    setSelectedRadio(e) {
+      console.log(e.target.id);
+      this.$emit('update:modelValue', e.target.id);
     }
   }
 };
@@ -33,11 +34,12 @@ export default {
   cursor: pointer;
 
   input {
+    margin-right: 5px;
     cursor: pointer;
   }
 
   label {
-    font-size: 14px;
+    font-size: 15px;
     cursor: pointer;
   }
 }

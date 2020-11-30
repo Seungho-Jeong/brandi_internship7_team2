@@ -50,7 +50,9 @@ eslint-disable vue/require-v-for-key */
               :radio-object="sellerCategories"
               :category="category"
               :key="category.categoryId"
+              :value="category.categoryId"
               v-model="sellerCategories.selectedSellerCategory"
+              @update:modelValue="setSelectedCategory()"
             />
           </div>
           <InputWithSpan
@@ -148,7 +150,7 @@ export default {
       },
       sellerCategories: {
         name: 'sellerCategory',
-        selectedCateory: null,
+        selectedSellerCategory: null,
         list: [
           { categoryId: 1, label: '쇼핑몰' },
           { categoryId: 2, label: '마켓' },
@@ -159,6 +161,7 @@ export default {
           { categoryId: 7, label: '뷰티' }
         ]
       },
+      selectedSellerCategory: null,
       sellerNameKo: {
         id: 'sellerNameKo',
         type: 'text',
@@ -198,7 +201,11 @@ export default {
     };
   },
   methods: {
+    setSelectedCategory() {
+      console.log(this.sellerCategories.selectedSellerCategory);
+    },
     isAccountValid() {
+      // console.log(this.selectedSellerCategory);
       const inputId = this.account;
 
       if (inputId.value.length === 0) {
@@ -344,16 +351,36 @@ export default {
 
       isAllValid ? (this.isFormValid = true) : (this.isFormValid = false);
     },
-    requestSignup() {
+    async requestSignup() {
       this.validateForm();
 
       if (this.isFormValid) {
-        const action = confirm('입력하신 정보로 셀러신청을 하시겠습니까?');
-        if (action) {
-          alert(
-            '신청이 완료되었습니다.\n검토 후 연락 드리겠습니다. 감사합니다.'
-          );
-          this.$router.push('/');
+        const API = 'http://localhost:5000/user/signup';
+        try {
+          const res = await fetch(API, {
+            method: 'POST',
+            body: JSON.stringify({
+              seller_category_id: this.sellerCategories.selectedCateory,
+              account: this.account.value,
+              password: this.password.value,
+              seller_name_ko: this.sellerNameKo.value,
+              seller_name_en: this.sellerNameEng.value,
+              cs_contact: this.csContact.value,
+              is_master: false
+            })
+          });
+          const data = await res.json();
+          if (data.message === 'success') {
+            const action = confirm('입력하신 정보로 셀러신청을 하시겠습니까?');
+            if (action) {
+              alert(
+                '신청이 완료되었습니다.\n검토 후 연락 드리겠습니다. 감사합니다.'
+              );
+              this.$router.push('/');
+            }
+          }
+        } catch (err) {
+          alert('POST error: post request to server failed');
         }
       } else {
         alert('입력하신 정보를 확인해주세요.');
