@@ -2,7 +2,7 @@ import json
 
 from flask import Blueprint, request
 
-from util.exception import ExistsException, NotExistsException, JwtTokenException
+from util.exception import ExistsException, NotExistsException
 from db_connection  import db_connection
 from util.decorator import login_decorator
 
@@ -42,7 +42,7 @@ def user_endpoints(user_service):
     def sign_in():
         """
         유저 로그인
-        :return: access_token, refresh_token
+        :return: access_token
         """
 
         db = None
@@ -110,9 +110,10 @@ def user_endpoints(user_service):
             if db:
                 db.close()
 
-    @user_app.route('/<int:seller_id>', methods=['GET'])
+    @user_app.route('/my_page', methods=['GET'])
+    @user_app.route('/my_page/<int:seller_id>', methods=['GET'])
     @login_decorator
-    def get_seller_information(seller_id):
+    def get_seller_information(**seller_id):
         """
         셀러 상세정보 가져오기
         :return: 셀러 상세정보
@@ -121,6 +122,11 @@ def user_endpoints(user_service):
         db = None
         try:
             db = db_connection()
+
+            if request.is_master:
+                seller_id = seller_id['seller_id']
+            else:
+                seller_id = request.seller_id
 
             result = user_service.get_seller_information(db, seller_id)
 
@@ -133,9 +139,10 @@ def user_endpoints(user_service):
             if db:
                 db.close()
 
-    @user_app.route('/<int:seller_id>', methods=['PUT'])
+    @user_app.route('/my_page', methods=['PUT'])
+    @user_app.route('/my_page/<int:seller_id>', methods=['PUT'])
     @login_decorator
-    def update_seller_information(seller_id):
+    def update_seller_information(**seller_id):
         """
         셀러 상세정보 수정
         :param seller_id: seller_id
@@ -146,7 +153,14 @@ def user_endpoints(user_service):
             data = request.json
             db = db_connection()
 
-            user_service.update_seller_information(db, data, seller_id)
+            if request.is_master:
+                seller_id = seller_id['seller_id']
+                modifier_id = request.seller_id
+            else:
+                seller_id = request.seller_id
+                modifier_id = request.seller_id
+
+            user_service.update_seller_information(db, data, seller_id, modifier_id)
 
             db.commit()
 
@@ -189,9 +203,10 @@ def user_endpoints(user_service):
             if db:
                 db.close()
 
-    @user_app.route('/<int:seller_id>/manager', methods=['POST'])
+    @user_app.route('/my_page/manager', methods=['POST'])
+    @user_app.route('/my_page/<int:seller_id>/manager', methods=['POST'])
     @login_decorator
-    def create_manager(seller_id):
+    def create_manager(**seller_id):
         """
         담당 매니저 생성
         :param seller_id: seller_id
@@ -202,6 +217,11 @@ def user_endpoints(user_service):
             data = request.json
             db = db_connection()
 
+            if request.is_master:
+                seller_id = seller_id['seller_id']
+            else:
+                seller_id = request.seller_id
+
             user_service.create_managers(db, data, seller_id)
             db.commit()
             return json.dumps({'message' : 'success'}), 200
@@ -211,5 +231,36 @@ def user_endpoints(user_service):
         except Exception as e:
             db.rollback()
             return json.dumps({'message' : 'error {}'.format(e)}), 500
+        finally:
+            if db:
+                db.close()
+
+    @user_app.route('my_page/history', methods=['GET'])
+    @user_app.route('my_page/<int:seller_id>/history', methods=['GET'])
+    @login_decorator
+    def get_seller_status_log(**seller_id):
+        """
+        셀러 상세 히스토리 정보 조회
+        :param seller_id: seller_id
+        :return: 상세 히스토리 리스트(시간, 입점상태, 수정자)
+        """
+
+        db = None
+        try:
+            db = db_connection()
+
+            if request.is_master:
+                seller_id = seller_id['seller_id']
+            else:
+                seller_id = request.seller_id
+
+            log_list = user_service.get_seller_status_log(db, seller_id)
+
+            return json.dumps({'message' : 'success', 'log_list' : log_list}, ensure_ascii=False), 200
+        except Exception as e:
+            return json.dumps({'message' : 'error {}'.format(e)}), 500
+        finally:
+            if db:
+                db.close()
 
     return user_app
