@@ -7,7 +7,7 @@ from flask import request
 from db_connection  import db_connection
 from config         import SECRET, ALGORITHM
 from model          import UserDao
-from util.exception import JwtTokenException
+from util.exception import JwtTokenException, NotExistsException
 
 
 def login_decorator(func):
@@ -26,6 +26,9 @@ def login_decorator(func):
 
             db = db_connection()
             seller = UserDao().check_account(db, user_info)
+
+            if not seller:
+                raise NotExistsException('not exists account', 400)
 
             if not seller['is_delete']:
                 request.is_master = seller['is_master']
