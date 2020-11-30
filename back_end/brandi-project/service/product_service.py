@@ -21,7 +21,7 @@ class ProductService:
         product_info = self.product_dao.get_product_information(db, product_id)
 
         if not product_info:
-            raise NotExistsException('not exists seller', 400)
+            raise NotExistsException('not exists product', 400)
 
         return product_info
 
