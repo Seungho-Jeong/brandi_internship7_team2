@@ -19,7 +19,7 @@ class ProductDao:
                 p.min_sale_quantity,
                 p.max_sale_quantity,
                 p.seller_id,
-                date_format(p.created_at, "%%Y-%%m-%%d %%H:%%i:%%S") AS created_at,
+                p.created_at,
                 p.is_delete,
                 p.registration_status_id,
                 p.sale_status_id,
