@@ -2,7 +2,7 @@ import jwt
 import bcrypt
 from datetime import datetime, timedelta
 
-from util.exception import NotExistsException, ExistsException
+from util.exception import NotExistsException, ExistsException, InvalidValueException
 from config         import SECRET, ALGORITHM
 
 
@@ -139,12 +139,44 @@ class UserService:
     def update_shop_status(self, db, data, seller_id):
         """
         셀러 상태(입점상태) 수정
+        존재하지않는 상태값(id)일 경우 not exists shop_status
+        현재 상태에 맞지 않는 상태 값을 요청시 invalid shop_status_id
         :param db: db_connection
         :param data: 셀러 상태
         :param seller_id: seller_id
         """
 
         data['seller_id'] = seller_id
+        shop_status_type = self.user_dao.check_shop_status(db, data['shop_status_id'])
+
+        # 존재하지 않는 shop_status_id
+        if not shop_status_type:
+            raise NotExistsException('not exists shop_status_id', 400)
+
+        seller_status = self.user_dao.get_shop_status(db, seller_id)
+        seller_status_id = seller_status['shop_status_id']
+
+        # 현재 상태에 따른 상태 변경 exception
+        if seller_status_id == 1:  # 입점대기
+            if data['shop_status_id'] != 2:
+                raise InvalidValueException('invalid shop_status_id', 400)
+
+        elif seller_status_id == 2:  # 입점
+            if data['shop_status_id'] != 4 and data['shop_status_id'] != 5:
+                raise InvalidValueException('invalid shop_status_id', 400)
+
+        elif seller_status_id == 3:  # 퇴점
+            raise InvalidValueException('invalid shop_status_id', 400)
+
+        elif seller_status_id == 4:  # 퇴점대기
+            if data['shop_status_id'] != 2 and data['shop_status_id'] != 5 \
+                    and data['shop_status_id'] != 3:
+                raise InvalidValueException('invalid shop_status_id', 400)
+
+        elif seller_status_id == 5:  # 휴점
+            if data['shop_status_id'] != 2 and data['shop_status_id'] != 4:
+                raise InvalidValueException('invalid shop_status_id', 400)
+
         self.user_dao.update_shop_status(db, data)
         
         # 로그 생성

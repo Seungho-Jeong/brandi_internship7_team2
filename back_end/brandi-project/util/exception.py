@@ -14,3 +14,7 @@ class NotExistsException(Errors):
 
 class JwtTokenException(Errors):
     pass
+
+
+class InvalidValueException(Errors):
+    pass

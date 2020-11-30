@@ -263,11 +263,52 @@ class UserDao:
                     info.seller_id = %(seller_id)s
             """, data)
 
+    def check_shop_status(self, db, shop_status_id):
+        """
+        셀러 상태 유효 체크
+        :param shop_status_id: shop_status_id
+        :param db: db_connection
+        :return: 셀러 상태 id
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    name
+                FROM
+                    shop_status_type
+                WHERE
+                    id = %s
+            """, shop_status_id)
+
+        return cursor.fetchone()
+
+    def get_shop_status(self, db, seller_id):
+        """
+        해당 셀러 상태(입점상태) 조회
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return: 해당 셀러 상태(입점상태)
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    shop_status_id
+                FROM
+                    sellers_informations
+                WHERE
+                    seller_id = %s
+            """, seller_id)
+
+        return cursor.fetchone()
+
     def update_shop_status(self, db, data):
         """
-        셀러 상태(입점상태) 수정
+        해당 셀러 상태(입점상태) 수정
         :param db: db_connection
-        :param data: 셀러 상태
+        :param data: 해당 셀러 상태
         """
 
         with db.cursor() as cursor:
