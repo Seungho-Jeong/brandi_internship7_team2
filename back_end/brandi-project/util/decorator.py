@@ -11,6 +11,12 @@ from util.exception import JwtTokenException
 
 
 def login_decorator(func):
+    """
+    request 헤더에 있는 access_token 을 확인하여 로그인 유효성 체크
+    토큰의 정보로 마스터여부 및 id값을 가져옵니다. (request.is_master, request.seller_id)
+    토큰이 만료되었을때는 expired token 에러처리
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         db = None

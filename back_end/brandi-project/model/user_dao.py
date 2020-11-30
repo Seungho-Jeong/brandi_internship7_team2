@@ -115,7 +115,7 @@ class UserDao:
                     manager.manager_mobile,
                     manager.manager_email,
                     category.name AS category,
-                    date_format(info.created_at, "%%Y-%%m-%%d %%T") AS created_at
+                    info.created_at
                 FROM
                     sellers_informations AS info
                 INNER JOIN
@@ -127,7 +127,7 @@ class UserDao:
                 LEFT JOIN
                     managers AS manager ON info.seller_id = manager.seller_id
                 WHERE
-                    info.is_delete = False
+                    info.is_delete = False AND seller.is_master = False
                 """
 
             if 'id' in filters:
@@ -212,7 +212,8 @@ class UserDao:
                     category.name AS category,
                     manager.manager_name,
                     manager.manager_mobile,
-                    manager.manager_email
+                    manager.manager_email,
+                    info.modifier_id
                 FROM
                     sellers_informations AS info
                 INNER JOIN
@@ -227,7 +228,7 @@ class UserDao:
                     info.is_delete = False AND 
                     info.seller_id = %s
             """, seller_id)
-            
+
             return cursor.fetchone()
 
     def update_seller_information(self, db, data):
@@ -331,7 +332,8 @@ class UserDao:
                     cs_opening_time,
                     cs_closing_time,
                     delivery_information,
-                    exchange_refund_information
+                    exchange_refund_information,
+                    modifier_id
                 ) VALUES(
                     %(seller_id)s,
                     %(shop_status_id)s,
@@ -351,7 +353,8 @@ class UserDao:
                     %(cs_opening_time)s,
                     %(cs_closing_time)s,
                     %(delivery_information)s,
-                    %(exchange_refund_information)s
+                    %(exchange_refund_information)s,
+                    %(modifier_id)s
                 )
             """, data)
 
@@ -384,7 +387,8 @@ class UserDao:
                     cs_opening_time,
                     cs_closing_time,
                     delivery_information,
-                    exchange_refund_information
+                    exchange_refund_information,
+                    modifier_id
                 FROM
                     seller_logs
                 WHERE
@@ -394,3 +398,34 @@ class UserDao:
             """, seller_id)
 
             return cursor.fetchone()
+
+    def get_seller_status_log(self, db, seller_id):
+        """
+        셀러 상세 히스토리 정보 조회
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return: 상세 히스토리 리스트(시간, 입점상태, 수정자)
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    log.id,
+                    log.created_at,
+                    shop.name AS shop_status,
+                    seller.account AS modifier,
+                    @rownum := @rownum + 1 AS no
+                FROM
+                    (select @rownum := 0) AS rownum,
+                    seller_logs AS log
+                INNER JOIN 
+                    sellers AS seller ON log.modifier_id = seller.id
+                INNER JOIN
+                    shop_status_type AS shop on log.shop_status_id = shop.id
+                WHERE
+                    log.seller_id = %s
+                ORDER BY
+                    log.id DESC 
+            """, seller_id)
+
+            return cursor.fetchall()
