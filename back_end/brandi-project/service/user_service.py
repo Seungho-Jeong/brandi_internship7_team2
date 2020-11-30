@@ -53,7 +53,8 @@ class UserService:
         if not bcrypt.checkpw(data['password'].encode('utf-8'), user_info['password'].encode('utf-8')):
             raise NotExistsException('invalid account', 400)
 
-        exp = datetime.utcnow() + timedelta(minutes=30)
+        # exp = datetime.utcnow() + timedelta(minutes=30)
+        exp = datetime.utcnow() + timedelta(days=1)
         access_token = jwt.encode({'account' : user_info['account'], 'exp' : exp}, SECRET, algorithm=ALGORITHM)
 
         return access_token.decode('utf-8')
@@ -65,8 +66,8 @@ class UserService:
         :return: 카테고리 리스트
         """
 
-        result = self.user_dao.seller_category_type(db)
-        return result
+        category = self.user_dao.seller_category_type(db)
+        return category
 
     def get_seller_list(self, db, filters):
         """

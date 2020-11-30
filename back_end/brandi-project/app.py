@@ -21,7 +21,7 @@ def create_app():
     app.json_encoder = CustomJsonEncoder
     CORS(app, resources={r'*': {'origins': '*'}})
 
-    # dao
+    # daos
     user_dao = UserDao()
 
     # service

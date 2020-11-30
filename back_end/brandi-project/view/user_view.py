@@ -76,9 +76,9 @@ def user_endpoints(user_service):
         try:
             db = db_connection()
 
-            result = user_service.seller_category_type(db)
+            category_list = user_service.seller_category_type(db)
 
-            return jsonify({'message' : 'success', 'category_list' : result}), 200
+            return jsonify({'message' : 'success', 'category_list' : category_list}), 200
         except Exception as e:
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
@@ -126,9 +126,9 @@ def user_endpoints(user_service):
             else:
                 seller_id = request.seller_id
 
-            result = user_service.get_seller_information(db, seller_id)
+            seller_info = user_service.get_seller_information(db, seller_id)
 
-            return jsonify({'message' : 'success', 'seller_info': result}), 200
+            return jsonify({'message' : 'success', 'seller_info': seller_info}), 200
         except NotExistsException as e:
             return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
@@ -222,6 +222,7 @@ def user_endpoints(user_service):
 
             user_service.create_managers(db, data, seller_id)
             db.commit()
+
             return jsonify({'message' : 'success'}), 200
         except KeyError as e:
             db.rollback()
