@@ -67,6 +67,54 @@ export default{
       console.log("hahaha");
       this.idValue = e.target.value;
       console.log(e.target.value)
+    },
+    signin(){
+      var axios = require('axios';
+      const https = require('https');
+      require('https').globalAgent.options.ca = require('ssl-rrot-cas/latest').create();
+
+      var instance = axios.create({
+validateStatus: fucntion (status){
+  return status;
+}
+
+      });
+
+      var apiHelper = function(status){
+
+        this.generateAccessToken aswync function(hostUrl, username, password, client_secret){
+          try {
+            var post_date = {
+              'grant_tyep': 'client_credentials',
+              "username" : username,
+              "password":password,
+              "client_id": client_id
+            }
+
+            const agent + new https.Agent({
+
+              rejectUnauthorized: false
+            });
+
+            const responese = await axios({
+              method:'post',
+              url: hostURl + '443/auth/blabla ending point',
+              httpsAgent : agent, data : Objec.keys(posjt_data).map(function key) {
+
+                return encodURIcoimpoent(key) + '=' + encodURIcomponent,
+              }
+                  headers: {
+                    'Contnet_)tyep': " application/x-www-form blablabla",
+                  }
+            });
+            console.log('access_token = ', response.data.access_token)
+            return response.data.access_toekn;
+          } catch (error){
+            console.log('token error is coming');
+            console.log('token error: ', )
+          }
+        }
+      }
     }
 
   }
