@@ -27,9 +27,8 @@ class UserService:
 
         seller_id = self.user_dao.sign_up(db, data)
 
-        if not data['is_master']:
-            self.user_dao.create_seller_information(db, seller_id)
-
+        self.user_dao.create_seller_information(db, seller_id)
+        
         # 로그 테이블 생성
         user_info = self.user_dao.get_seller_information(db, seller_id)
         self.user_dao.create_seller_logs(db, user_info)
@@ -54,7 +53,8 @@ class UserService:
         if not bcrypt.checkpw(data['password'].encode('utf-8'), user_info['password'].encode('utf-8')):
             raise NotExistsException('invalid account', 400)
 
-        exp = datetime.utcnow() + timedelta(minutes=30)
+        # exp = datetime.utcnow() + timedelta(minutes=30)
+        exp = datetime.utcnow() + timedelta(days=1)
         access_token = jwt.encode({'account' : user_info['account'], 'exp' : exp}, SECRET, algorithm=ALGORITHM)
 
         return access_token.decode('utf-8')
@@ -66,8 +66,8 @@ class UserService:
         :return: 카테고리 리스트
         """
 
-        result = self.user_dao.seller_category_type(db)
-        return result
+        category = self.user_dao.seller_category_type(db)
+        return category
 
     def get_seller_list(self, db, filters):
         """
@@ -78,10 +78,25 @@ class UserService:
         """
 
         user_info = self.user_dao.get_seller_list(db, filters)
-
+        
+        offset = filters['offset'] if 'offset' in filters else 0
+        limit  = filters['limit'] if 'limit' in filters else 10
+        
+        seller_list = [{
+            'id'             : seller['id'],
+            'account'        : seller['account'],
+            'name_en'        : seller['name_en'],
+            'name_ko'        : seller['name_ko'],
+            'manager_name'   : seller['manager_name'],
+            'manager_mobile' : seller['manager_mobile'],
+            'manager_email'  : seller['manager_email'],
+            'category'       : seller['category'],
+            'created_at'     : seller['created_at']
+        } for seller in user_info[1][offset:limit]]
+        
         sellers = {
             'count'       : user_info[0],
-            'seller_list' : user_info[1]
+            'seller_list' : seller_list
         }
 
         return sellers
@@ -101,15 +116,17 @@ class UserService:
 
         return user_info
 
-    def update_seller_information(self, db, data, seller_id):
+    def update_seller_information(self, db, data, seller_id, modifier_id):
         """
         셀러 상세정보 수정
         :param db: db_connection
         :param data: 셀러 상세정보
+        :param modifier_id: modifier_id (수정자)
         :param seller_id: seller_id
         """
 
         data['seller_id'] = seller_id
+        data['modifier_id'] = modifier_id
         self.user_dao.update_seller_information(db, data)
         
         # 로그 생성
@@ -155,3 +172,21 @@ class UserService:
         user_log['manager_email'] = data['manager_email']
 
         self.user_dao.create_seller_logs(db, user_log)
+
+    def get_seller_status_log(self, db, seller_id):
+        """
+        셀러 상세 히스토리 정보 조회
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return: 상세 히스토리 리스트(시간, 입점상태, 수정자)
+        """
+
+        user_log = self.user_dao.get_seller_status_log(db, seller_id)
+        log_list = [{
+            'no'          : int(log['no']),
+            'created_at'  : log['created_at'],
+            'shop_status' : log['shop_status'],
+            'modifier'    : log['modifier']
+        } for log in user_log]
+
+        return log_list
