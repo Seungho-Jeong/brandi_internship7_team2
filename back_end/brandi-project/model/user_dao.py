@@ -115,7 +115,7 @@ class UserDao:
                     manager.manager_mobile,
                     manager.manager_email,
                     category.name AS category,
-                    date_format(info.created_at, "%%Y-%%m-%%d %%T") AS created_at
+                    info.created_at
                 FROM
                     sellers_informations AS info
                 INNER JOIN
@@ -411,12 +411,12 @@ class UserDao:
             cursor.execute("""
                 SELECT
                     log.id,
-                    date_format(log.created_at, "%%Y-%%m-%%d %%T") AS created_at,
+                    log.created_at,
                     shop.name AS shop_status,
                     seller.account AS modifier,
                     @rownum := @rownum + 1 AS no
                 FROM
-                    (select @rownum := 0) AS r,
+                    (select @rownum := 0) AS rownum,
                     seller_logs AS log
                 INNER JOIN 
                     sellers AS seller ON log.modifier_id = seller.id

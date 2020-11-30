@@ -1,6 +1,4 @@
-import json
-
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 
 from util.exception import ExistsException, NotExistsException
 from db_connection  import db_connection
@@ -24,16 +22,16 @@ def user_endpoints(user_service):
             user_service.sign_up(db, data)
             db.commit()
 
-            return json.dumps({'message' : 'success'}), 200
+            return jsonify({'message' : 'success'}), 200
         except ExistsException as e:
             db.rollback()
-            return json.dumps({'message' : e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return json.dumps({'message' : 'key_error {}'.format(e)}), 400
+            return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -53,16 +51,16 @@ def user_endpoints(user_service):
             access_token = user_service.sign_in(db, data)
             db.commit()
 
-            return json.dumps({'message' : 'success', 'access_token' : access_token}), 200
+            return jsonify({'message' : 'success', 'access_token' : access_token}), 200
         except NotExistsException as e:
             db.rollback()
-            return json.dumps({'message' : e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return json.dumps({'message': 'key_error {}'.format(e)}), 400
+            return jsonify({'message': 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -80,9 +78,9 @@ def user_endpoints(user_service):
 
             result = user_service.seller_category_type(db)
 
-            return json.dumps({'message' : 'success', 'category_list' : result}), 200
+            return jsonify({'message' : 'success', 'category_list' : result}), 200
         except Exception as e:
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -102,10 +100,10 @@ def user_endpoints(user_service):
 
             sellers = user_service.get_seller_list(db, filters)
 
-            return json.dumps({'message' : 'success', 'list_count' : sellers['count'],
-                               'seller_list' : sellers['seller_list']}, ensure_ascii=False), 200
+            return jsonify({'message' : 'success', 'list_count' : sellers['count'],
+                            'seller_list' : sellers['seller_list']}), 200
         except Exception as e:
-            return json.dumps({'message': 'error {}'.format(e)}), 500
+            return jsonify({'message': 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -130,11 +128,11 @@ def user_endpoints(user_service):
 
             result = user_service.get_seller_information(db, seller_id)
 
-            return json.dumps({'message' : 'success', 'seller_info': result}, ensure_ascii=False), 200
+            return jsonify({'message' : 'success', 'seller_info': result}), 200
         except NotExistsException as e:
-            return json.dumps({'message' : e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -164,13 +162,13 @@ def user_endpoints(user_service):
 
             db.commit()
 
-            return json.dumps({'message' : 'success'}), 200
+            return jsonify({'message' : 'success'}), 200
         except KeyError as e:
             db.rollback()
-            return json.dumps({'message' : 'key_error {}'.format(e)}), 400
+            return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -192,13 +190,13 @@ def user_endpoints(user_service):
 
             db.commit()
 
-            return json.dumps({'message' : 'success'}), 200
+            return jsonify({'message' : 'success'}), 200
         except KeyError as e:
             db.rollback()
-            return json.dumps({'message' : 'key_error {}'.format(e)}), 400
+            return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -224,13 +222,13 @@ def user_endpoints(user_service):
 
             user_service.create_managers(db, data, seller_id)
             db.commit()
-            return json.dumps({'message' : 'success'}), 200
+            return jsonify({'message' : 'success'}), 200
         except KeyError as e:
             db.rollback()
-            return json.dumps({'message' : 'key_error {}'.format(e)}), 400
+            return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -256,9 +254,19 @@ def user_endpoints(user_service):
 
             log_list = user_service.get_seller_status_log(db, seller_id)
 
-            return json.dumps({'message' : 'success', 'log_list' : log_list}, ensure_ascii=False), 200
+            return jsonify({'message' : 'success', 'log_list' : log_list}), 200
         except Exception as e:
-            return json.dumps({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : 'error {}'.format(e)}), 500
+        finally:
+            if db:
+                db.close()
+
+    def upload_files():
+        db = None
+        try:
+            db = db_connection()
+        except Exception as e:
+            return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
