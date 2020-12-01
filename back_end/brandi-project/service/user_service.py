@@ -77,26 +77,18 @@ class UserService:
         :return: 셀러 회원 목록
         """
 
+        filters['offset'] = int(filters['offset']) if 'offset' in filters else 0
+        filters['limit']  = int(filters['limit']) if 'limit' in filters else 10
+
+        if filters['offset'] > filters['limit']:
+            raise InvalidValueException('offset should not greater than limit', 400)
+
+        count     = self.user_dao.get_seller_list_count(db, filters)
         user_info = self.user_dao.get_seller_list(db, filters)
-        
-        offset = filters['offset'] if 'offset' in filters else 0
-        limit  = filters['limit'] if 'limit' in filters else 10
-        
-        seller_list = [{
-            'id'             : seller['id'],
-            'account'        : seller['account'],
-            'name_en'        : seller['name_en'],
-            'name_ko'        : seller['name_ko'],
-            'manager_name'   : seller['manager_name'],
-            'manager_mobile' : seller['manager_mobile'],
-            'manager_email'  : seller['manager_email'],
-            'category'       : seller['category'],
-            'created_at'     : seller['created_at']
-        } for seller in user_info[1][offset:limit]]
-        
+
         sellers = {
-            'count'       : user_info[0],
-            'seller_list' : seller_list
+            'count'       : count['count'],
+            'seller_list' : user_info
         }
 
         return sellers
@@ -110,9 +102,12 @@ class UserService:
         """
 
         user_info = self.user_dao.get_seller_information(db, seller_id)
+        managers  = self.user_dao.get_managers(db, seller_id)
 
         if not user_info:
             raise NotExistsException('not exists seller', 400)
+
+        user_info['managers'] = managers
 
         return user_info
 
@@ -125,10 +120,74 @@ class UserService:
         :param seller_id: seller_id
         """
 
+        ordering = self.user_dao.get_ordering_managers(db, seller_id)
+        if ordering:  # 기존에 매니저가 존재했는지 체크
+            if data['managers']:  # 기존에 매니저가 존재하고, request 에도 있는 경우
+                if len(data['managers']) > 3:  # 리스트를 3개 이상 요청했을 경우
+                    raise InvalidValueException('managers are the maximum of 3', 400)
+
+                row_count = ordering['ordering']
+                input_count = len(data['managers'])
+
+                order_index = 1
+                if row_count == input_count:  # 기존의 개수와 똑같은 경우 (수정)
+                    for manager_info in data['managers']:
+                        manager_info['seller_id'] = seller_id
+                        manager_info['ordering'] = order_index
+                        self.user_dao.update_managers(db, manager_info)
+                        order_index += 1
+
+                elif row_count > input_count:  # 기존의 개수가 더 많을 경우 (수정->삭제)
+                    for manager_info in data['managers']:
+                        manager_info['seller_id'] = seller_id
+                        manager_info['ordering'] = order_index
+                        self.user_dao.update_managers(db, manager_info)
+                        order_index += 1
+
+                    for i in range(row_count - input_count):
+                        manager_info = {
+                            'seller_id' : seller_id,
+                            'ordering'  : order_index
+                        }
+                        self.user_dao.delete_managers(db, manager_info)
+                        order_index += 1
+
+                elif row_count < input_count:  # 기존의 개수가 더 적을 경우 (수정->생성)
+                    for i in range(row_count):
+                        manager_info = data['managers'][i]
+                        manager_info['seller_id'] = seller_id
+                        manager_info['ordering'] = order_index
+                        self.user_dao.update_managers(db, manager_info)
+                        order_index += 1
+
+                    for manager_info in data['managers'][order_index - 1:input_count]:
+                        manager_info['seller_id'] = seller_id
+                        manager_info['ordering'] = order_index
+                        self.user_dao.create_managers(db, manager_info)
+                        order_index += 1
+
+            else:  # 기존에 존재했으나, request 에는 없는 경우 (삭제)
+                row_count = ordering['ordering']
+
+                for order_index in range(1, row_count + 1):
+                    manager_info = {
+                        'seller_id' : seller_id,
+                        'ordering'  : order_index
+                    }
+                    self.user_dao.delete_managers(db, manager_info)
+        else:  # 기존에는 존재하지 않는 경우 (생성)
+            order_index = 1
+            for manager_info in data['managers']:
+                manager_info['seller_id'] = seller_id
+                manager_info['ordering'] = order_index
+                self.user_dao.create_managers(db, manager_info)
+                order_index += 1
+
+        data.pop('managers')
         data['seller_id'] = seller_id
         data['modifier_id'] = modifier_id
         self.user_dao.update_seller_information(db, data)
-        
+
         # 로그 생성
         user_log = self.user_dao.get_seller_logs(db, seller_id)
         for key in data:
@@ -195,6 +254,17 @@ class UserService:
         """
 
         data['seller_id'] = seller_id
+
+        ordering = self.user_dao.get_ordering_managers(db, seller_id)
+
+        if ordering:
+            if ordering['ordering'] == 3:
+                raise ExistsException('already existed 3 managers', 400)
+
+            data['ordering'] = ordering['ordering'] + 1
+        else:
+            data['ordering'] = 1
+
         self.user_dao.create_managers(db, data)
 
         # 로그 생성

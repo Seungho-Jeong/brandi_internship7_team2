@@ -91,7 +91,8 @@ def user_endpoints(user_service):
         """
         셀러 회원목록 리스트 및 목록 개수
         마스터 토큰이 아닐 시 permission denied
-        필터의 key 값이 잘못되었을 때 key_error
+        필터의 key 값이 잘못되었을 때 invalid input 'key' in filters
+        end_date 가 start_date 보다 이전날짜로 입력되었을때는 예외처리
         :return: 회원목록 리스트 및 개수
         """
 
@@ -104,18 +105,25 @@ def user_endpoints(user_service):
 
             filter_list = ['id', 'account', 'name_en', 'name_ko',
                            'manager_name', 'manager_mobile', 'manager_email',
-                           'category', 'start_date', 'end_date']
+                           'category', 'start_date', 'end_date',
+                           'offset', 'limit']
 
             filters = dict(request.args)
 
             for key in filters:
                 if key not in filter_list:
-                    return jsonify({'message' : 'key_error {} in filters'.format(key)}), 400
+                    return jsonify({'message' : 'invalid input {} in filters'.format(key)}), 400
+
+            if ('start_date' in filters) and ('end_date' in filters):
+                if filters['end_date'] < filters['start_date']:
+                    raise InvalidValueException('end_date should not earlier than start_date', 400)
 
             sellers = user_service.get_seller_list(db, filters)
 
-            return jsonify({'message' : 'success', 'list_count' : sellers['count'],
+            return jsonify({'message' : 'success', 'total_count' : sellers['count'],
                             'seller_list' : sellers['seller_list']}), 200
+        except InvalidValueException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
@@ -276,6 +284,9 @@ def user_endpoints(user_service):
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except ExistsException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
             return jsonify({'message' : 'key_error {}'.format(e)}), 400

@@ -18,10 +18,10 @@ class CustomJsonEncoder(JSONEncoder):
 
 def create_app():
     app = Flask(__name__)
-    app.json_encoder = CustomJsonEncoder
     CORS(app, resources={r'*': {'origins': '*'}})
+    app.json_encoder = CustomJsonEncoder
 
-    # daos
+    # dao
     user_dao = UserDao()
     product_dao = ProductDao()
 
