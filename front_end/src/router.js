@@ -2,8 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import Login from './pages/Login.vue';
 import Signup from './pages/Signup.vue';
-import Account from './pages/ManageMembers/Account.vue';
-import Seller from './pages/ManageMembers/Seller.vue';
+import Account from './pages/managemembers/Account.vue';
+import Seller from './pages/managemembers/Seller.vue';
 import Order from './pages/manageorders/Order.vue';
 
 const router = createRouter({

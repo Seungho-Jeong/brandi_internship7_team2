@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <h2>브랜디 어드민 로그인</h2>
-    <form>
+    <form @submit.prevent="login">
       <input
         :class="{ isEmpty: idInvalid && loginClicked }"
         v-model="idValue"
@@ -45,31 +45,64 @@
 <script lang="js">
 
 export default{
+  name: 'Login',
     data() {
     return {
       idValue: '',
       pwValue: '',
       idInvalid: this.idValue===0? true : false,
       pwInvalid: false,
-      loginClicked: false
-
+      loginClicked: false,
+      token: []
     }
   },
   methods: {
     checkIdPw(){
-      console.log('hahahaha')
-      console.log(this.idValue)
-      console.log(this.pwValue)
         this.idValue.length === 0 ? this.idInvalid = true : this.idInvalid = false;
         this.pwValue.length === 0 ? this.pwInvalid = true : this.pwInvalid = false;
     },
     getValue(e){
-      console.log("hahaha");
       this.idValue = e.target.value;
-      console.log(e.target.value)
+    },
+    login(loginObj){
+      axios
+      .post('https://localhost:9000/signin', loginObj)
+      .then(res => {
+        let token = res.data.token
+        let config = {
+          headers: {
+            "access-token": token
+          }
+        }
+        axios
+        .get('https://localhost:9000', config)
+        .then(responese => {
+          let userInfo = {
+            id: responese.data.data.id,
+            first_name: response.data.data.first_name,
+          }
+        })
+      })
+      .catch(
+
+      )
     }
 
-  }
+  },
+
+//   loginV1 (){
+// const myLoginRoutine = user => new Promise ((resolve, reject) => {
+//   axios({url: 'auth', data: user, method: 'POST' })
+//     .then(resp => {
+//       const token = resp.data.token
+//       localStorage.setItem('user-token', token) // store the token in localstorage
+//       resolve(resp)
+//     })
+//   .catch(err => {
+//     localStorage.removeItem('user-token') // if the request fails, remove any possible user token if possible
+//     reject(err)
+//   })
+// })
   }
 </script>
 
