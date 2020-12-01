@@ -253,50 +253,6 @@ def user_endpoints(user_service):
             if db:
                 db.close()
 
-    @user_app.route('/my_page/manager', methods=['POST'])
-    @user_app.route('/my_page/<int:seller_id>/manager', methods=['POST'])
-    @login_decorator
-    def create_manager(**seller_id):
-        """
-        담당 매니저 생성
-        :param seller_id: seller_id
-        """
-
-        db = None
-        try:
-            data = request.json
-            db = db_connection()
-
-            # 마스터
-            if request.is_master:
-                if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
-
-                seller_id = seller_id['seller_id']
-            # 셀러
-            else:
-                if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
-
-                seller_id = request.seller_id
-
-            user_service.create_managers(db, data, seller_id)
-            db.commit()
-
-            return jsonify({'message' : 'success'}), 200
-        except ExistsException as e:
-            db.rollback()
-            return jsonify({'message' : e.message}), e.status_code
-        except KeyError as e:
-            db.rollback()
-            return jsonify({'message' : 'key_error {}'.format(e)}), 400
-        except Exception as e:
-            db.rollback()
-            return jsonify({'message' : 'error {}'.format(e)}), 500
-        finally:
-            if db:
-                db.close()
-
     @user_app.route('my_page/history', methods=['GET'])
     @user_app.route('my_page/<int:seller_id>/history', methods=['GET'])
     @login_decorator

@@ -114,6 +114,8 @@ class UserService:
     def update_seller_information(self, db, data, seller_id, modifier_id):
         """
         셀러 상세정보 수정
+        담당매니저를 3개이상 등록하려고할 경우는 예외처리
+        담당매니저 부분은 기존의 데이터와 비교해서 수정하거나 생성,삭제 처리
         :param db: db_connection
         :param data: 셀러 상세정보
         :param modifier_id: modifier_id (수정자)
@@ -242,36 +244,6 @@ class UserService:
         user_log = self.user_dao.get_seller_logs(db, seller_id)
         for key in data:
             user_log[key] = data[key]
-
-        self.user_dao.create_seller_logs(db, user_log)
-
-    def create_managers(self, db, data, seller_id):
-        """
-        담당 매니저 생성
-        :param db: db_connection
-        :param data: 매니저 정보
-        :param seller_id: seller_id
-        """
-
-        data['seller_id'] = seller_id
-
-        ordering = self.user_dao.get_ordering_managers(db, seller_id)
-
-        if ordering:
-            if ordering['ordering'] == 3:
-                raise ExistsException('already existed 3 managers', 400)
-
-            data['ordering'] = ordering['ordering'] + 1
-        else:
-            data['ordering'] = 1
-
-        self.user_dao.create_managers(db, data)
-
-        # 로그 생성
-        user_log = self.user_dao.get_seller_logs(db, seller_id)
-        user_log['manager_name'] = data['manager_name']
-        user_log['manager_mobile'] = data['manager_mobile']
-        user_log['manager_email'] = data['manager_email']
 
         self.user_dao.create_seller_logs(db, user_log)
 
