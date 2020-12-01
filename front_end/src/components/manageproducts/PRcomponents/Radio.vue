@@ -1,15 +1,13 @@
 <template>
   <div>
-    <a-radio-group v-model="value" @change="onChange">
-      <a-radio :value="1"> A </a-radio>
-      <a-radio :value="2"> B </a-radio>
-      <a-radio :value="3"> C </a-radio>
-      <a-radio :value="4"> D </a-radio>
+    <a-radio-group v-for="(item, idx) in radio"  v-model="value" @change="onChange"  :key="idx">
+      <a-radio :value="{idx}">{{item}} </a-radio>
     </a-radio-group>
   </div>
 </template>
 <script>
 export default {
+  props: ['radio']
   data() {
     return {
       value: 1

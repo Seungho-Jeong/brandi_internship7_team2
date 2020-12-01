@@ -1,70 +1,31 @@
 <template>
   <div>
     <a-button type="primary" @click="showModal">
-      Open Modal with customized button props
-    </a-button>
-    <a-modal
-      v-model="visible"
-      title="Basic Modal"
-      :ok-button-props="{ props: { disabled: true } }"
-      :cancel-button-props="{ props: { disabled: true } }"
-      @ok="handleOk"
-    >
-      <p>Some contents...</p>
-      <p>Some contents...</p>
-      <p>Some contents...</p>
-    </a-modal>
-  </div>
-</template>
-<script>
-export default {
-  data() {
-    return {
-      visible: false
-    };
-  },
-  methods: {
-    showModal() {
-      this.visible = true;
-    },
-    handleOk(e) {
-      console.log(e);
-      this.visible = false;
-    },
-    handleCancel(e) {
-      console.log(e);
-      this.visible = false;
-    }
-  }
-};
-</script>
-
-<template>
-  <div>
-    <a-button type="primary" @click="showModal">
       Open Modal with customized footer
     </a-button>
-    <a-modal v-model="visible" title="Title" on-ok="handleOk">
-      <template slot="footer">
-        <a-button key="back" @click="handleCancel"> Return </a-button>
+    <a-modal v-model="visible" title="셀러 선택" on-ok="handleOk">
+      <template v-slot:footer>
+        <a-button key="back" @click="handleCancel"> 닫기 </a-button>
         <a-button
           key="submit"
           type="primary"
           :loading="loading"
           @click="handleOk"
         >
-          Submit
+          셀러 선택하기
         </a-button>
       </template>
-      <p>Some contents...</p>
-      <p>Some contents...</p>
-      <p>Some contents...</p>
-      <p>Some contents...</p>
-      <p>Some contents...</p>
+      <a-icon type="info-circle" theme="filled" :style="{ fontSize: '16px', color: '#08c' }"/>
+     
+      <p>상품을 등록할 셀러를 선택해주세요. (검색 10건)</p>
+
+      <p>셀러 검색</p>
+      <p><Select></p>
     </a-modal>
   </div>
 </template>
 <script>
+import { Modal, Button, Icon } from 'ant-design-vue';
 export default {
   data() {
     return {
@@ -89,18 +50,3 @@ export default {
   }
 };
 </script>
-
-<template>
-  <div class="icons-list">
-    <a-icon type="info-circle" />
-    <a-icon type="smile" theme="twoTone" />
-    <a-icon type="heart" theme="twoTone" two-tone-color="#eb2f96" />
-    <a-icon type="check-circle" theme="twoTone" two-tone-color="#52c41a" />
-  </div>
-</template>
-<style scoped>
-.icons-list >>> .anticon {
-  margin-right: 6px;
-  font-size: 24px;
-}
-</style>
