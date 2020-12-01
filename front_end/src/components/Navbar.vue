@@ -28,7 +28,7 @@
             <router-link
               v-for="n in sidebar[idx].submenu.length"
               class="event-link"
-              to="signup"
+              to="/signup"
               :key="n"
             >
               <li class="submenu">

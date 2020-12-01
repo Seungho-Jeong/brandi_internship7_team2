@@ -20,7 +20,6 @@
         type="password"
         id="pw"
         name="psw"
-        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
         title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"
         placeholder="셀러 비밀번호"
         @input="checkIdPw"
@@ -29,11 +28,7 @@
         비밀번호를 입력해주세요.
       </p>
 
-      <input
-        type="submit"
-        value="로그인"
-        @click.prevent="loginClicked = true"
-      />
+      <input type="submit" value="로그인" />
     </form>
     <p class="checkSignup">
       아직 셀러가 아니신가요?
@@ -43,6 +38,8 @@
 </template>
 
 <script lang="js">
+import axios from 'axios';
+import router from 'vue-router';
 
 export default{
   name: 'Login',
@@ -53,7 +50,7 @@ export default{
       idInvalid: this.idValue===0? true : false,
       pwInvalid: false,
       loginClicked: false,
-      token: []
+      token: ''
     }
   },
   methods: {
@@ -64,45 +61,25 @@ export default{
     getValue(e){
       this.idValue = e.target.value;
     },
-    login(loginObj){
-      axios
-      .post('https://localhost:9000/signin', loginObj)
-      .then(res => {
-        let token = res.data.token
-        let config = {
-          headers: {
-            "access-token": token
-          }
-        }
-        axios
-        .get('https://localhost:9000', config)
-        .then(responese => {
-          let userInfo = {
-            id: responese.data.data.id,
-            first_name: response.data.data.first_name,
-          }
+   login() {
+        const auth = { account: this.idValue, password: this.pwValue };
+        console.log(this.idValue)
+        // // Correct username is 'foo' and password is 'bar'
+        const url = 'http://10.251.1.120:5000/user/signin';
+        axios.post(url, auth)
+        .then(res => res.data)
+        .then(resp => {
+          this.token = resp.access_token;
+          console.log(this.token);
+          router.push('/account')
+
         })
-      })
-      .catch(
-
-      )
-    }
-
-  },
-
-//   loginV1 (){
-// const myLoginRoutine = user => new Promise ((resolve, reject) => {
-//   axios({url: 'auth', data: user, method: 'POST' })
-//     .then(resp => {
-//       const token = resp.data.token
-//       localStorage.setItem('user-token', token) // store the token in localstorage
-//       resolve(resp)
-//     })
-//   .catch(err => {
-//     localStorage.removeItem('user-token') // if the request fails, remove any possible user token if possible
-//     reject(err)
-//   })
-// })
+        .catch((error) => {
+          console.error(error);
+          this.$router.push('/signup')
+})
+     }
+  }
   }
 </script>
 
