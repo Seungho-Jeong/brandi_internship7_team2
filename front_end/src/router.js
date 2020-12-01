@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Login from './pages/Login.vue';
 import Signup from './pages/Signup.vue';
 import Account from './pages/managemembers/Account.vue';
+import ProductRegist from './components/manageproducts/ProductRegistPage.vue';
 import Seller from './pages/managemembers/Seller.vue';
 import Order from './pages/manageorders/Order.vue';
 
@@ -37,7 +38,7 @@ const router = createRouter({
     },
     {
       path: '/product_regist_page',
-      component: Account
+      component: ProductRegist
     },
     {
       path: '/order',
