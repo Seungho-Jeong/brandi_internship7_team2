@@ -96,26 +96,18 @@ class UserDao:
 
             return cursor.fetchall()
 
-    def get_seller_list(self, db, filters):
+    def get_seller_list_count(self, db, filters):
         """
-        셀러 회원 목록 가져오기
+        셀러 회원 목록 개수 가져오기
         :param filters: 회원 목록 필터
         :param db: db_connection
-        :return: 셀러 회원 목록
+        :return: 셀러 회원 목록 개수
         """
-        
+
         with db.cursor() as cursor:
             sql = """
                 SELECT
-                    info.id,
-                    seller.account,
-                    seller.seller_name_en AS name_en,
-                    seller.seller_name_ko AS name_ko,
-                    manager.manager_name,
-                    manager.manager_mobile,
-                    manager.manager_email,
-                    category.name AS category,
-                    info.created_at
+                    count(*) AS count
                 FROM
                     sellers_informations AS info
                 INNER JOIN
@@ -125,9 +117,12 @@ class UserDao:
                 INNER JOIN
                     shop_status_type AS shop ON info.shop_status_id = shop.id
                 LEFT JOIN
-                    managers AS manager ON info.seller_id = manager.seller_id
+                    managers AS m ON info.seller_id = m.seller_id
                 WHERE
-                    info.is_delete = False AND seller.is_master = False
+                    info.is_delete = False AND 
+                    seller.is_master = False AND
+                    m.ordering = 1 OR
+                    m.ordering IS NULL
                 """
 
             if 'id' in filters:
@@ -153,10 +148,78 @@ class UserDao:
                 AND info.created_at <= date_format(%(end_date)s, '%%Y-%%m-%%d 23:59:59')
                 '''
 
-            sql += ' GROUP BY info.id'
             cursor.execute(sql, filters)
 
-            return cursor.rowcount, cursor.fetchall()
+            return cursor.fetchone()
+
+    def get_seller_list(self, db, filters):
+        """
+        셀러 회원 목록 가져오기
+        :param filters: 회원 목록 필터
+        :param db: db_connection
+        :return: 셀러 회원 목록
+        """
+        
+        with db.cursor() as cursor:
+            sql = """
+                SELECT
+                    info.id,
+                    seller.account,
+                    seller.seller_name_en AS name_en,
+                    seller.seller_name_ko AS name_ko,
+                    m.manager_name,
+                    m.manager_mobile,
+                    m.manager_email,
+                    category.name AS category,
+                    info.created_at
+                FROM
+                    sellers_informations AS info
+                INNER JOIN
+                    sellers AS seller ON info.seller_id = seller.id
+                INNER JOIN
+                    seller_categories_type AS category ON seller.seller_category_id = category.id
+                INNER JOIN
+                    shop_status_type AS shop ON info.shop_status_id = shop.id
+                LEFT JOIN
+                    managers AS m ON info.seller_id = m.seller_id
+                WHERE
+                    info.is_delete = False AND 
+                    seller.is_master = False AND
+                    m.ordering = 1 OR
+                    m.ordering IS NULL
+                """
+
+            if 'id' in filters:
+                sql += ' AND info.id = %(id)s'
+            if 'account' in filters:
+                sql += ' AND seller.account = %(account)s'
+            if 'name_en' in filters:
+                sql += ' AND seller.seller_name_en = %(name_en)s'
+            if 'name_ko' in filters:
+                sql += ' AND seller.seller_name_ko = %(name_ko)s'
+            if 'manager_name' in filters:
+                sql += ' AND manager.manager_name = %(manager_name)s'
+            if 'manager_mobile' in filters:
+                sql += ' AND manager.manger_mobile = %(manger_mobile)s'
+            if 'manager_email' in filters:
+                sql += ' AND manager.manager_email = %(manager_email)s'
+            if 'category' in filters:
+                sql += ' AND category.id = %(category)s'
+            if 'start_date' in filters:
+                sql += ' AND info.created_at >= %(start_date)s'
+            if 'end_date' in filters:
+                sql += '''
+                AND info.created_at <= date_format(%(end_date)s, '%%Y-%%m-%%d 23:59:59')
+                '''
+
+            sql += '''
+                 ORDER BY info.id ASC
+                 LIMIT %(offset)s, %(limit)s
+                '''
+
+            cursor.execute(sql, filters)
+
+            return cursor.fetchall()
 
     def create_seller_information(self, db, seller_id):
         """
@@ -210,9 +273,6 @@ class UserDao:
                     seller.cs_contact,
                     status.name AS shop_status,
                     category.name AS category,
-                    manager.manager_name,
-                    manager.manager_mobile,
-                    manager.manager_email,
                     info.modifier_id
                 FROM
                     sellers_informations AS info
@@ -222,8 +282,6 @@ class UserDao:
                     shop_status_type AS status ON info.shop_status_id = status.id
                 INNER JOIN
                     seller_categories_type AS category ON seller.seller_category_id = category.id
-                LEFT JOIN
-                    managers AS manager ON info.seller_id = manager.seller_id
                 WHERE
                     info.is_delete = False AND 
                     info.seller_id = %s
@@ -263,11 +321,52 @@ class UserDao:
                     info.seller_id = %(seller_id)s
             """, data)
 
+    def check_shop_status(self, db, shop_status_id):
+        """
+        셀러 상태 유효 체크
+        :param shop_status_id: shop_status_id
+        :param db: db_connection
+        :return: 셀러 상태 id
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    name
+                FROM
+                    shop_status_type
+                WHERE
+                    id = %s
+            """, shop_status_id)
+
+        return cursor.fetchone()
+
+    def get_shop_status(self, db, seller_id):
+        """
+        해당 셀러 상태(입점상태) 조회
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return: 해당 셀러 상태(입점상태)
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    shop_status_id
+                FROM
+                    sellers_informations
+                WHERE
+                    seller_id = %s
+            """, seller_id)
+
+        return cursor.fetchone()
+
     def update_shop_status(self, db, data):
         """
-        셀러 상태(입점상태) 수정
+        해당 셀러 상태(입점상태) 수정
         :param db: db_connection
-        :param data: 셀러 상태
+        :param data: 해당 셀러 상태
         """
 
         with db.cursor() as cursor:
@@ -279,6 +378,54 @@ class UserDao:
                 WHERE
                     seller_id = %(seller_id)s
             """, data)
+
+    def get_ordering_managers(self, db, seller_id):
+        """
+        해당 셀러의 매니저 등록 정보 조회
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return:
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    ordering
+                FROM
+                    managers
+                WHERE
+                    seller_id = %s
+                ORDER BY
+                    ordering DESC
+                LIMIT 1
+            """, seller_id)
+
+            return cursor.fetchone()
+
+    def get_managers(self, db, seller_id):
+        """
+        셀러 상세정보 담당 매니저 조회
+        :param db: db_connection
+        :param seller_id: seller_id
+        :return: 담당 매니저 목록
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id AS manager_id,
+                    manager_name,
+                    manager_mobile,
+                    manager_email
+                FROM
+                    managers
+                WHERE
+                    seller_id = %s
+                ORDER BY
+                    ordering ASC
+            """, seller_id)
+
+            return cursor.fetchall()
 
     def create_managers(self, db, data):
         """
@@ -294,14 +441,53 @@ class UserDao:
                     manager_name,
                     manager_mobile,
                     manager_email,
-                    modifier_id
+                    modifier_id,
+                    ordering
                 ) VALUES (
                     %(seller_id)s,
                     %(manager_name)s,
                     %(manager_mobile)s,
                     %(manager_email)s,
-                    %(seller_id)s
+                    %(seller_id)s,
+                    %(ordering)s
                 )
+            """, data)
+
+    def update_managers(self, db, data):
+        """
+        담당 매니저 정보 수정
+        :param db: db_connection
+        :param data: 매니저 정보
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE
+                    managers
+                SET
+                    manager_name = %(manager_name)s,
+                    manager_mobile = %(manager_mobile)s,
+                    manager_email = %(manager_email)s,
+                    ordering = %(ordering)s
+                WHERE
+                    seller_id = %(seller_id)s AND
+                    ordering = %(ordering)s
+            """, data)
+
+    def delete_managers(self, db, data):
+        """
+        담당 매니저 정보 삭제 처리
+        :param db: db_connection
+        :param data: seller_id, is_delete
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM
+                    managers
+                WHERE
+                    seller_id = %(seller_id)s AND
+                    ordering = %(ordering)s
             """, data)
 
     def create_seller_logs(self, db, data):
