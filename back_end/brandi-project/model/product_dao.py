@@ -1,9 +1,9 @@
 class ProductDao:
-    def get_product_information(self, db, product_id):
+    def get_product_information(self, db, search_params):
         """
         전달받은 상품 아이디(Params)에 해당하는 정보를 DB Select하는 함수입니다
+        :param search_params: 조회대상의 ID(product_id)가 포함된 매개변수
         :param db: Database 연결 객체
-        :param product_id: 대상 상품 ID
         :return: 대상 상품 상세정보
         """
 
@@ -29,23 +29,30 @@ class ProductDao:
                 i.product_image
             FROM
                 products AS p
-                    LEFT JOIN
-                        sellers ON p.seller_id = sellers.id
-                    LEFT JOIN
-                        registration_status_type AS registration ON p.registration_status_id = registration.id
-                    LEFT JOIN
-                        sale_status_type AS sale ON p.sale_status_id = sale.id
-                    LEFT JOIN
-                        display_status_type AS display ON p.display_status_id = display.id
-                    LEFT JOIN
-                        sellers AS seller ON p.modifier_id = seller.id
-                    LEFT JOIN
-                        product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
-                    LEFT JOIN
-                        product_images AS i ON p.id = i.product_id
+                LEFT JOIN
+                    sellers
+                    ON p.seller_id = sellers.id
+                LEFT JOIN
+                    registration_status_type AS registration
+                    ON p.registration_status_id = registration.id
+                LEFT JOIN
+                    sale_status_type AS sale
+                    ON p.sale_status_id = sale.id
+                LEFT JOIN
+                    display_status_type AS display
+                    ON p.display_status_id = display.id
+                LEFT JOIN
+                    sellers AS seller
+                    ON p.modifier_id = seller.id
+                LEFT JOIN
+                    product_subcategories_type AS subcat
+                    ON p.product_subcategory_id = subcat.id
+                LEFT JOIN
+                    product_images AS i
+                    ON p.id = i.product_id
             WHERE
-                p.id = %s
-        """, product_id)
+                p.id = %(product_id)s
+        """, search_params)
 
         return cursor.fetchone()
 
@@ -106,15 +113,20 @@ class ProductDao:
                 UPDATE
                     products AS p
                         LEFT JOIN
-                            registration_status_type AS registration ON p.registration_status_id = registration.id
+                            registration_status_type AS registration
+                            ON p.registration_status_id = registration.id
                         LEFT JOIN
-                            sale_status_type AS sale ON p.sale_status_id = sale.id
+                            sale_status_type AS sale
+                            ON p.sale_status_id = sale.id
                         LEFT JOIN
-                            display_status_type AS display ON p.display_status_id = display.id
+                            display_status_type AS display
+                            ON p.display_status_id = display.id
                         LEFT JOIN
-                            sellers AS seller ON p.modifier_id = seller.id
+                            sellers AS seller
+                            ON p.modifier_id = seller.id
                         LEFT JOIN
-                            product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
+                            product_subcategories_type AS subcat
+                            ON p.product_subcategory_id = subcat.id
                 SET
                     p.product_name               = %(product_name)s,
                     p.price                      = %(price)s,
@@ -147,9 +159,11 @@ class ProductDao:
                 FROM
                     product_categories_type AS p_cat
                         INNER JOIN
-                            seller_categories_type AS s_cat ON s_cat.seller_type_id = p_cat.seller_type_id
+                            seller_categories_type AS s_cat
+                            ON s_cat.seller_type_id = p_cat.seller_type_id
                         INNER JOIN
-                            sellers AS s ON s.seller_category_id = s_cat.id
+                            sellers AS s
+                            ON s.seller_category_id = s_cat.id
                 WHERE
                     s.id = %s
             """, seller_id)
@@ -173,10 +187,25 @@ class ProductDao:
                     cat.name AS product_category_name
                 FROM
                     product_subcategories_type AS subcat
-                        INNER JOIN
-                            product_categories_type AS cat ON subcat.product_category_id = cat.id
+                    INNER JOIN product_categories_type AS cat
+                        ON subcat.product_category_id = cat.id
                 WHERE
                     subcat.product_category_id = %s
             """, category_id)
 
             return cursor.fetchall()
+
+    def match_check_product_and_seller(self, db, inspection_data):
+        print(f"dao_check_auth - inspection data : {inspection_data}")
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id
+                FROM
+                    products
+                WHERE
+                    id = %(product_id)s
+                    AND seller_id = %(seller_id)s
+            """, inspection_data)
+
+            return cursor.fetchone()

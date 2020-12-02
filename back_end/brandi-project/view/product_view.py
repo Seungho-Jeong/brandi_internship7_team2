@@ -20,9 +20,18 @@ def product_endpoints(product_service):
 
         db = None
         try:
-            db = db_connection()
+            db            = db_connection()
+            search_params = {}
 
-            product_info = product_service.get_product_information(db, product_id)
+            if request.is_master:
+                search_params['seller_id']  = None
+                search_params['product_id'] = product_id
+
+            else:
+                search_params['seller_id']  = request.seller_id
+                search_params['product_id'] = product_id
+
+            product_info = product_service.get_product_information(db, search_params)
 
             return jsonify({'message': 'success', 'product_detail' : product_info}), 200
         except NotExistsException as e:
@@ -110,7 +119,7 @@ def product_endpoints(product_service):
 
         db = None
         try:
-            db = db_connection()
+            db        = db_connection()
             seller_id = request.seller_id
 
             category_list = product_service.get_product_category(db, seller_id)

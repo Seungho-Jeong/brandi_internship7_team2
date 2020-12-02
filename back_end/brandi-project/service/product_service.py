@@ -2,7 +2,7 @@ import jwt
 import bcrypt
 from datetime import datetime, timedelta
 
-from util.exception import NotExistsException, ExistsException
+from util.exception import NotExistsException, InvalidValueException
 from config         import SECRET, ALGORITHM
 
 
@@ -10,15 +10,19 @@ class ProductService:
     def __init__(self, product_dao):
         self.product_dao = product_dao
 
-    def get_product_information(self, db, product_id):
+    def get_product_information(self, db, search_params):
         """
-        상품 상세정보를 가져오는 함수입니다
+        주어진 조건(상품 ID, 셀러 ID)에 맞추어 상품 상세정보를 가져오는 함수입니다
+        :param search_params: 가져올 상품에 대한 조건 매개변수(product_id, seller_id, is_master)
         :param db: 데이터베이스 연결객체
-        :param product_id: 상품 ID
         :return: 상품 상세정보(JSON)
         """
 
-        product_info = self.product_dao.get_product_information(db, product_id)
+        if search_params['seller_id']:
+            if not self.product_dao.match_check_product_and_seller(db, search_params):
+                raise InvalidValueException('product inquiry failed', 401)
+
+        product_info = self.product_dao.get_product_information(db, search_params)
 
         if not product_info:
             raise NotExistsException('not exists product', 400)

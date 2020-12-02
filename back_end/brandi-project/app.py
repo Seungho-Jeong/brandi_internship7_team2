@@ -24,6 +24,7 @@ class CustomJsonEncoder(JSONEncoder):
 
 def create_app():
     app = Flask(__name__)
+    
     CORS(app, resources={r'*': {'origins': '*'}})
     app.json_encoder = CustomJsonEncoder
 
