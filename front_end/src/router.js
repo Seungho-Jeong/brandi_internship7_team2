@@ -3,10 +3,10 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Login from './pages/Login.vue';
 import Signup from './pages/Signup.vue';
 import Account from './pages/managemembers/Account.vue';
-import ProductRegist from './components/manageproducts/ProductRegistPage.vue';
 import Seller from './pages/managemembers/Seller.vue';
+import Cproduct from './components/manageproducts/Cproduct.vue';
+import ProductRegist from './components/manageproducts/ProductRegistPage.vue';
 import Order from './pages/manageorders/Order.vue';
-import InfoBasic from './components/manageproducts/InfoBasic.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,14 +28,14 @@ const router = createRouter({
       component: Account
     },
     {
-      // path: '/seller',
-      path: '/seller/seller_my_page/:sellerId',
+      path: '/seller/:sellerId',
+      name: 'Seller',
       component: Seller,
       props: true
     },
     {
       path: '/cproduct',
-      component: Account
+      component: Cproduct
     },
     {
       path: '/product_regist_page',

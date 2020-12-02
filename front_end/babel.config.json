@@ -2,6 +2,10 @@
   "presets": ["@babel/preset-env"],
   "plugins": [
     [
+      "@babel/transform-runtime", 
+      {"regenerator": true}
+    ],
+    [
       "import", 
       { "libraryName": "ant-design-vue"}
     ]

@@ -37,50 +37,53 @@
   </div>
 </template>
 
-<script lang="js">
+<script>
 import axios from 'axios';
-import router from 'vue-router';
 
-export default{
+export default {
   name: 'Login',
-    data() {
+  data() {
     return {
       idValue: '',
       pwValue: '',
-      idInvalid: this.idValue===0? true : false,
+      idInvalid: this.idValue === 0 ? true : false,
       pwInvalid: false,
       loginClicked: false,
       token: ''
-    }
+    };
   },
   methods: {
-    checkIdPw(){
-        this.idValue.length === 0 ? this.idInvalid = true : this.idInvalid = false;
-        this.pwValue.length === 0 ? this.pwInvalid = true : this.pwInvalid = false;
+    checkIdPw() {
+      this.idValue.length === 0
+        ? (this.idInvalid = true)
+        : (this.idInvalid = false);
+      this.pwValue.length === 0
+        ? (this.pwInvalid = true)
+        : (this.pwInvalid = false);
     },
-    getValue(e){
+    getValue(e) {
       this.idValue = e.target.value;
     },
-   login() {
-        const auth = { account: this.idValue, password: this.pwValue };
-        console.log(this.idValue)
-        // // Correct username is 'foo' and password is 'bar'
-        const url = 'http://10.251.1.120:5000/user/signin';
-        axios.post(url, auth)
-        .then(res => res.data)
-        .then(resp => {
+    login() {
+      const auth = { account: this.idValue, password: this.pwValue };
+      console.log(this.idValue);
+      // // Correct username is 'foo' and password is 'bar'
+      const url = 'http://10.251.1.120:5000/user/signin';
+      axios
+        .post(url, auth)
+        .then((res) => res.data)
+        .then((resp) => {
           this.token = resp.access_token;
           console.log(this.token);
-          router.push('/account')
-
+          this.$router.push('/account');
         })
         .catch((error) => {
           console.error(error);
-          this.$router.push('/signup')
-})
-     }
+          this.$router.push('/signup');
+        });
+    }
   }
-  }
+};
 </script>
 
 <style lang="scss" scoped>
