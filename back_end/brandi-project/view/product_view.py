@@ -12,10 +12,10 @@ def product_endpoints(product_service):
     def view_product_information(product_id):
         """
         상품 아이디가 주어지면 상품에 대한 상세정보를 JSON 형식으로 Response하는 함수입니다
-        :param product_id: 상품 아이디(ID)
+        :param product_id: 상품 ID
         :return:
-            200: 상품 상세정보
-            500: Exception message
+            200: 상품 상세정보(JSON)
+            500: Exception error message
         """
 
         db = None
@@ -39,9 +39,9 @@ def product_endpoints(product_service):
         """
         신규 상품에 대한 정보가 JSON형식으로 주어지면 DB에 입력하는 함수입니다
         :return:
-            200: Success mesaage, 신규 등록 상품 아이디(ID)
+            200: Success mesaage, 신규 등록 상품 ID
             400: Key error message
-            500: Exception message
+            500: Exception error message
         """
 
         db = None
@@ -56,10 +56,8 @@ def product_endpoints(product_service):
 
             return jsonify({'message' : 'success', 'product_id' : new_product_id}), 200
         except KeyError as e:
-            db.rollback()
             return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
-            db.rollback()
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
             if db:
@@ -72,9 +70,9 @@ def product_endpoints(product_service):
         수정하고자 하는 상품의 아이디(ID)와 정보(JSON)가 주어지면 DB에 반영하는 함수입니다
         :param product_id: 대상 상품 아이디(ID)
         :return:
-            200: Success message, 대상 상품 아이디(ID)
+            200: Success message, 대상 상품 ID
             400: Key error message
-            500: Exception message
+            500: Exception error message
         """
 
         db = None
@@ -100,5 +98,52 @@ def product_endpoints(product_service):
             if db:
                 db.close()
 
-    return product_app
+    @product_app.route('/category', methods=['GET'])
+    @login_decorator
+    def get_product_category_list():
+        """
+        상품의 카테고리(1차 카테고리)를 가져오는 함수입니다
+        :return:
+            200: 카테고리 리스트(JSON, List)
+            500: Exception error message
+        """
 
+        db = None
+        try:
+            db = db_connection()
+
+            category_list = product_service.get_product_category(db)
+
+            return jsonify({'message' : 'success', 'category_list' : category_list}), 200
+        except Exception as e:
+            return jsonify({'message' : 'error {}'.format(e)}), 500
+        finally:
+            if db:
+                db.close()
+
+    @product_app.route('/category/<int:category_id>', methods=['GET'])
+    @login_decorator
+    def get_product_subcategory_list(category_id):
+        """
+        상품의 카테고리(1차 카테고리) ID가 주어지면 서브 카테고리(2차 카테고리)를 가져오는 함수입니다
+        :param category_id: 카테고리 ID (product_category_id)
+        :return:
+            200: 서브 카테고리 리스트(JSON, List)
+            500: Exception error message
+        """
+        db = None
+        try:
+            db = db_connection()
+
+            sub_category_list = product_service.get_product_subcategory(db, category_id)
+
+            return jsonify({'message' : 'success', 'subcategory_list' : sub_category_list}), 200
+        except KeyError as e:
+            return jsonify({'message' : 'key_error {}'.format(e)}), 400
+        except Exception as e:
+            return jsonify({'message' : 'error {}'.format(e)}), 500
+        finally:
+            if db:
+                db.close()
+
+    return product_app
