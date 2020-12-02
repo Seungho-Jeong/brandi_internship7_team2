@@ -29,20 +29,20 @@ class ProductDao:
                 i.product_image
             FROM
                 products AS p
-            LEFT JOIN
-                sellers ON p.seller_id = sellers.id
-            LEFT JOIN
-                registration_status_type AS registration ON p.registration_status_id = registration.id
-            LEFT JOIN
-                sale_status_type AS sale ON p.sale_status_id = sale.id
-            LEFT JOIN
-                display_status_type AS display ON p.display_status_id = display.id
-            LEFT JOIN
-                sellers AS seller ON p.modifier_id = seller.id
-            LEFT JOIN
-                product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
-            LEFT JOIN
-                product_images AS i ON p.id = i.product_id
+                    LEFT JOIN
+                        sellers ON p.seller_id = sellers.id
+                    LEFT JOIN
+                        registration_status_type AS registration ON p.registration_status_id = registration.id
+                    LEFT JOIN
+                        sale_status_type AS sale ON p.sale_status_id = sale.id
+                    LEFT JOIN
+                        display_status_type AS display ON p.display_status_id = display.id
+                    LEFT JOIN
+                        sellers AS seller ON p.modifier_id = seller.id
+                    LEFT JOIN
+                        product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
+                    LEFT JOIN
+                        product_images AS i ON p.id = i.product_id
             WHERE
                 p.id = %s
         """, product_id)
@@ -100,20 +100,21 @@ class ProductDao:
         :param db: 데이터베이스 연결 객체
         :param update_data: 상품 수정 정보
         """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 UPDATE
                     products AS p
-                LEFT JOIN
-                    registration_status_type AS registration ON p.registration_status_id = registration.id
-                LEFT JOIN
-                    sale_status_type AS sale ON p.sale_status_id = sale.id
-                LEFT JOIN
-                    display_status_type AS display ON p.display_status_id = display.id
-                LEFT JOIN
-                    sellers AS seller ON p.modifier_id = seller.id
-                LEFT JOIN
-                    product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
+                        LEFT JOIN
+                            registration_status_type AS registration ON p.registration_status_id = registration.id
+                        LEFT JOIN
+                            sale_status_type AS sale ON p.sale_status_id = sale.id
+                        LEFT JOIN
+                            display_status_type AS display ON p.display_status_id = display.id
+                        LEFT JOIN
+                            sellers AS seller ON p.modifier_id = seller.id
+                        LEFT JOIN
+                            product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
                 SET
                     p.product_name               = %(product_name)s,
                     p.price                      = %(price)s,
@@ -134,20 +135,23 @@ class ProductDao:
     def get_product_category(self, db, seller_id):
         """
         상품의 카테고리(1차 카테고리)를 DB Select하는 함수입니다.
+        :param seller_id: 등록할 상품을 보유한 셀러 ID
         :param db: 데이터베이스 연결 객체
         :return: 카테고리 리스트
         """
+
         with db.cursor() as cursor:
             cursor.execute("""
-                SELECT
-                    p_cat.id,
-                    p_cat.name,
-                    p_cat.seller_type_id
+                SELECT 
+                    p_cat.id, p_cat.name, p_cat.seller_type_id
                 FROM
-                    product_categories_type AS p_cat,
-                    sellers AS seller
+                    product_categories_type AS p_cat
+                        INNER JOIN
+                            seller_categories_type AS s_cat ON s_cat.seller_type_id = p_cat.seller_type_id
+                        INNER JOIN
+                            sellers AS s ON s.seller_category_id = s_cat.id
                 WHERE
-                    p_cat.seller_type_id = (SELECT seller_category_id FROM sellers WHERE id = %s)
+                    s.id = %s
             """, seller_id)
 
             return cursor.fetchall()
@@ -159,6 +163,7 @@ class ProductDao:
         :param category_id: 카테고리 ID (product_category_id)
         :return: 서브 카테고리 리스트
         """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -168,8 +173,8 @@ class ProductDao:
                     cat.name AS product_category_name
                 FROM
                     product_subcategories_type AS subcat
-                LEFT JOIN
-                    product_categories_type AS cat ON subcat.product_category_id = cat.id
+                        INNER JOIN
+                            product_categories_type AS cat ON subcat.product_category_id = cat.id
                 WHERE
                     subcat.product_category_id = %s
             """, category_id)

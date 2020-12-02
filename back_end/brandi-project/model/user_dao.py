@@ -250,7 +250,6 @@ class UserDao:
         :param seller_id: seller_id
         :return: 셀러 상세정보
         """
-
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -273,7 +272,10 @@ class UserDao:
                     seller.cs_contact,
                     status.name AS shop_status,
                     category.name AS category,
-                    info.modifier_id
+                    info.modifier_id,
+                    m.manager_name,
+                    m.manager_mobile,
+                    m.manager_email
                 FROM
                     sellers_informations AS info
                 INNER JOIN
@@ -282,11 +284,15 @@ class UserDao:
                     shop_status_type AS status ON info.shop_status_id = status.id
                 INNER JOIN
                     seller_categories_type AS category ON seller.seller_category_id = category.id
+                LEFT JOIN
+                    managers AS m ON info.seller_id = m.seller_id
                 WHERE
                     info.is_delete = False AND 
-                    info.seller_id = %s
+                    info.seller_id = %s AND
+                    m.ordering = 1 OR
+                    m.ordering IS NULL
+                LIMIT 1
             """, seller_id)
-
             return cursor.fetchone()
 
     def update_seller_information(self, db, data):

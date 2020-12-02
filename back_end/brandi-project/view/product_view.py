@@ -102,7 +102,7 @@ def product_endpoints(product_service):
     @login_decorator
     def get_product_category_list():
         """
-        상품의 카테고리(1차 카테고리)를 가져오는 함수입니다
+        로그인 토큰에서 셀러 ID를 받아 매칭되는 상품의 카테고리(1차 카테고리)를 가져오는 함수입니다
         :return:
             200: 카테고리 리스트(JSON, List)
             500: Exception error message
@@ -112,7 +112,6 @@ def product_endpoints(product_service):
         try:
             db = db_connection()
             seller_id = request.seller_id
-            print(seller_id)
 
             category_list = product_service.get_product_category(db, seller_id)
 
