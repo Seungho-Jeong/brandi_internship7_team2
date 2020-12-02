@@ -131,7 +131,7 @@ class ProductDao:
                     p.id = %(product_id)s
             """, update_data)
 
-    def get_product_category(self, db):
+    def get_product_category(self, db, seller_id):
         """
         상품의 카테고리(1차 카테고리)를 DB Select하는 함수입니다.
         :param db: 데이터베이스 연결 객체
@@ -140,15 +140,15 @@ class ProductDao:
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
-                    cat.id,
-                    cat.name,
-                    cat.seller_type_id,
-                    s_type.name AS seller_type_name
+                    p_cat.id,
+                    p_cat.name,
+                    p_cat.seller_type_id
                 FROM
-                    product_categories_type AS cat
-                LEFT JOIN
-                    seller_types_type AS s_type ON cat.seller_type_id = s_type.id 
-            """)
+                    product_categories_type AS p_cat,
+                    sellers AS seller
+                WHERE
+                    p_cat.seller_type_id = (SELECT seller_category_id FROM sellers WHERE id = %s)
+            """, seller_id)
 
             return cursor.fetchall()
 

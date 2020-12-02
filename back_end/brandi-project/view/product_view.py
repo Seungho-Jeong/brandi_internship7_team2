@@ -111,8 +111,10 @@ def product_endpoints(product_service):
         db = None
         try:
             db = db_connection()
+            seller_id = request.seller_id
+            print(seller_id)
 
-            category_list = product_service.get_product_category(db)
+            category_list = product_service.get_product_category(db, seller_id)
 
             return jsonify({'message' : 'success', 'category_list' : category_list}), 200
         except Exception as e:
