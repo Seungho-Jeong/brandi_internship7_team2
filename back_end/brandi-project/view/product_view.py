@@ -11,7 +11,8 @@ def product_endpoints(product_service):
     @login_decorator
     def view_product_information(product_id):
         """
-        상품 아이디가 주어지면 상품에 대한 상세정보를 JSON 형식으로 Response하는 함수입니다
+        상품 아이디가 주어지면 조회자가 관리자인지 일반 셀러인지 구분한 뒤
+        조회권한이 있는 상품에 대한 상세정보를 JSON 형식으로 Response하는 함수입니다
         :param product_id: 상품 ID
         :return:
             200: 상품 상세정보(JSON)
@@ -42,11 +43,13 @@ def product_endpoints(product_service):
             if db:
                 db.close()
 
-    @product_app.route('/registration', methods=['POST'])
+    @product_app.route('/registration', methods=['GET', 'POST'])
     @login_decorator
     def registrate_new_product():
         """
         신규 상품에 대한 정보가 JSON형식으로 주어지면 DB에 입력하는 함수입니다
+        method가 GET인 경우 상품 등록을 위한 페이지에 연결하고,
+        method가 POST인 경우 DB에 상품 등록을 실행합니다.
         :return:
             200: Success mesaage, 신규 등록 상품 ID
             400: Key error message
@@ -54,6 +57,12 @@ def product_endpoints(product_service):
         """
 
         db = None
+        # if request.method == 'GET':
+        #     try:
+        #         db = db_connection()
+        #         seller_id = request.seller_id
+
+        # else:
         try:
             db           = db_connection()
             product_info = request.json
@@ -141,6 +150,7 @@ def product_endpoints(product_service):
             200: 서브 카테고리 리스트(JSON, List)
             500: Exception error message
         """
+
         db = None
         try:
             db = db_connection()
