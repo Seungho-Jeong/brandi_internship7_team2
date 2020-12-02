@@ -45,14 +45,15 @@ class ProductService:
 
         self.product_dao.update_product_info(db, update_data)
 
-    def get_product_category(self, db):
+    def get_product_category(self, db, seller_id):
         """
         상품 카테고리(1차 카테고리)를 가져오는 함수입니다.
+        :param seller_id:
         :param db: 데이터베이스 연결 객체
         :return: 카테고리 리스트(JSON)
         """
 
-        category_list = self.product_dao.get_product_category(db)
+        category_list = self.product_dao.get_product_category(db, seller_id)
         return category_list
 
     def get_product_subcategory(self, db, category_id):
