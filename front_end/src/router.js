@@ -5,7 +5,7 @@ import Signup from './pages/Signup.vue';
 import Account from './pages/managemembers/Account.vue';
 import Seller from './pages/managemembers/Seller.vue';
 import Cproduct from './components/manageproducts/Cproduct.vue';
-import ProductRegistPage from './components/manageproducts/ProductRegistPage.vue';
+import ProductRegist from './components/manageproducts/ProductRegistPage.vue';
 import Order from './pages/manageorders/Order.vue';
 
 const router = createRouter({
@@ -39,7 +39,7 @@ const router = createRouter({
     },
     {
       path: '/product_regist_page',
-      component: ProductRegistPage
+      component: ProductRegist
     },
     {
       path: '/order',

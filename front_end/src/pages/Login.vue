@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <h2>브랜디 어드민 로그인</h2>
-    <form>
+    <form @submit.prevent="login">
       <input
         :class="{ isEmpty: idInvalid && loginClicked }"
         v-model="idValue"
@@ -20,7 +20,6 @@
         type="password"
         id="pw"
         name="psw"
-        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
         title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"
         placeholder="셀러 비밀번호"
         @input="checkIdPw"
@@ -29,11 +28,7 @@
         비밀번호를 입력해주세요.
       </p>
 
-      <input
-        type="submit"
-        value="로그인"
-        @click.prevent="loginClicked = true"
-      />
+      <input type="submit" value="로그인" />
     </form>
     <p class="checkSignup">
       아직 셀러가 아니신가요?
@@ -43,32 +38,47 @@
 </template>
 
 <script lang="js">
+import axios from 'axios';
+import router from 'vue-router';
 
 export default{
+  name: 'Login',
     data() {
     return {
       idValue: '',
       pwValue: '',
       idInvalid: this.idValue===0? true : false,
       pwInvalid: false,
-      loginClicked: false
-
+      loginClicked: false,
+      token: ''
     }
   },
   methods: {
     checkIdPw(){
-      console.log('hahahaha')
-      console.log(this.idValue)
-      console.log(this.pwValue)
         this.idValue.length === 0 ? this.idInvalid = true : this.idInvalid = false;
         this.pwValue.length === 0 ? this.pwInvalid = true : this.pwInvalid = false;
     },
     getValue(e){
-      console.log("hahaha");
       this.idValue = e.target.value;
-      console.log(e.target.value)
-    }
+    },
+   login() {
+        const auth = { account: this.idValue, password: this.pwValue };
+        console.log(this.idValue)
+        // // Correct username is 'foo' and password is 'bar'
+        const url = 'http://10.251.1.120:5000/user/signin';
+        axios.post(url, auth)
+        .then(res => res.data)
+        .then(resp => {
+          this.token = resp.access_token;
+          console.log(this.token);
+          router.push('/account')
 
+        })
+        .catch((error) => {
+          console.error(error);
+          this.$router.push('/signup')
+})
+     }
   }
   }
 </script>

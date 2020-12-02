@@ -1,5 +1,7 @@
-from .user_view import UserView
+from .user_view import user_endpoints
+from .product_view import product_endpoints
 
 __all__ = [
-    UserView
+    'user_endpoints',
+    'product_endpoints'
 ]
