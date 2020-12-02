@@ -3,7 +3,7 @@ class ProductDao:
         """
         전달받은 상품 아이디(Params)에 해당하는 정보를 DB Select하는 함수입니다
         :param db: Database 연결 객체
-        :param product_id: 대상 상품 아이디(ID)
+        :param product_id: 대상 상품 ID
         :return: 대상 상품 상세정보
         """
 
@@ -54,7 +54,7 @@ class ProductDao:
         전달받은 상품 정보(Params)를 DB에 Insert하는 함수입니다.
         :param db: 데이터베이스 연결 객체
         :param product_info: 신규 상품의 정보
-        :return: 신규 등록한 상품의 아이디(ID)
+        :return: 신규 등록한 상품의 ID
         """
 
         with db.cursor() as cursor:
@@ -130,3 +130,48 @@ class ProductDao:
                 WHERE
                     p.id = %(product_id)s
             """, update_data)
+
+    def get_product_category(self, db):
+        """
+        상품의 카테고리(1차 카테고리)를 DB Select하는 함수입니다.
+        :param db: 데이터베이스 연결 객체
+        :return: 카테고리 리스트
+        """
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    cat.id,
+                    cat.name,
+                    cat.seller_type_id,
+                    s_type.name AS seller_type_name
+                FROM
+                    product_categories_type AS cat
+                LEFT JOIN
+                    seller_types_type AS s_type ON cat.seller_type_id = s_type.id 
+            """)
+
+            return cursor.fetchall()
+
+    def get_product_subcategory(self, db, category_id):
+        """
+        상품의 서브 카테고리(2차 카테고리)를 DB Select하는 함수입니다
+        :param db: 데이터베이스 연결 객체
+        :param category_id: 카테고리 ID (product_category_id)
+        :return: 서브 카테고리 리스트
+        """
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    subcat.id,
+                    subcat.name,
+                    subcat.product_category_id,
+                    cat.name AS product_category_name
+                FROM
+                    product_subcategories_type AS subcat
+                LEFT JOIN
+                    product_categories_type AS cat ON subcat.product_category_id = cat.id
+                WHERE
+                    subcat.product_category_id = %s
+            """, category_id)
+
+            return cursor.fetchall()
