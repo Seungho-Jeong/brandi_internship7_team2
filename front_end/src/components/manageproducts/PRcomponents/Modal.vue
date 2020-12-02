@@ -15,12 +15,16 @@
           셀러 선택하기
         </a-button>
       </template>
-      <a-icon type="info-circle" theme="filled" :style="{ fontSize: '16px', color: '#08c' }"/>
-     
+      <a-icon
+        type="info-circle"
+        theme="filled"
+        :style="{ fontSize: '16px', color: '#08c' }"
+      />
+
       <p>상품을 등록할 셀러를 선택해주세요. (검색 10건)</p>
 
       <p>셀러 검색</p>
-      <p><Select></p>
+      <p></p>
     </a-modal>
   </div>
 </template>

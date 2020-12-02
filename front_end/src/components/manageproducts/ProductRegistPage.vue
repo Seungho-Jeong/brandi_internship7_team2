@@ -1,14 +1,22 @@
 <template>
-  <PageHeading></PageHeading>
+  <div>
+    <PageHeading heading="상품 등록" subHeading="상품 정보 등록"></PageHeading>
 
-  <PageBar></PageBar>
+    <PageBar
+      class="page-bar"
+      page="order"
+      menuLevel1="상품관리"
+      menuLevel2="상품 관리"
+      menuLevel3="상품 등록"
+    ></PageBar>
 
-  <InfoBasic></InfoBasic>
-  <InfoTagger></InfoTagger>
-  <InfoOpt></InfoOpt>
-  <InfoSell></InfoSell>
-  <InfoRet></InfoRet>
-  <InfoCodi></InfoCodi>
+    <InfoBasic></InfoBasic>
+    <InfoTagger></InfoTagger>
+    <InfoOpt></InfoOpt>
+    <InfoSell></InfoSell>
+    <InfoRet></InfoRet>
+    <InfoCodi></InfoCodi>
+  </div>
 </template>
 
 <script>
@@ -23,7 +31,11 @@ import InfoBasic from './InfoBasic.vue';
 
 export default {
   name: 'ProductRegist',
-  props: ['heading', 'subHeading'],
+  components: {
+    PageHeading,
+    PageBar,
+    InfoBasic
+  },
   data() {
     return {
       table: [{ a: 12134, b: 24143141 }],
