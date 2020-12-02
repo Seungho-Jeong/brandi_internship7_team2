@@ -72,10 +72,10 @@ eslint-disable vue/require-v-for-key */
           />
         </div>
         <div class="buttons">
-          <button class="left" type="submit" @click="requestSignup">
+          <button class="left" type="button" @click="requestSignup">
             신청
           </button>
-          <button class="right" type="submit" @click="cancelSignup">
+          <button class="right" type="button" @click="cancelSignup">
             취소
           </button>
         </div>
@@ -87,6 +87,7 @@ eslint-disable vue/require-v-for-key */
 <script>
 import InputWithSpan from '../components/reusables/InputWithSpan.vue';
 import RadioInputs from '../components/reusables/RadioInputs.vue';
+import { SIGNUP_API } from '../config';
 
 export default {
   name: 'Signup',
@@ -161,7 +162,6 @@ export default {
           { categoryId: 7, label: '뷰티' }
         ]
       },
-      selectedSellerCategory: null,
       sellerNameKo: {
         id: 'sellerNameKo',
         type: 'text',
@@ -205,7 +205,6 @@ export default {
       console.log(this.sellerCategories.selectedSellerCategory);
     },
     isAccountValid() {
-      // console.log(this.selectedSellerCategory);
       const inputId = this.account;
 
       if (inputId.value.length === 0) {
@@ -352,12 +351,11 @@ export default {
       isAllValid ? (this.isFormValid = true) : (this.isFormValid = false);
     },
     async requestSignup() {
-      this.validateForm();
+      await this.validateForm();
 
       if (this.isFormValid) {
-        const API = 'http://localhost:5000/user/signup';
         try {
-          const res = await fetch(API, {
+          const res = await fetch(SIGNUP_API, {
             method: 'POST',
             body: JSON.stringify({
               seller_category_id: this.sellerCategories.selectedCateory,
@@ -378,6 +376,8 @@ export default {
               );
               this.$router.push('/');
             }
+          } else {
+            alert('server message: FAIL');
           }
         } catch (err) {
           alert('POST error: post request to server failed');
