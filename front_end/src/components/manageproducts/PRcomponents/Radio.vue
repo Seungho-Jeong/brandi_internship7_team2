@@ -1,22 +1,8 @@
 <template>
-  <div>
-    <a-radio-group v-for="(item, idx) in radio"  v-model="value" @change="onChange"  :key="idx">
-      <a-radio :value="{idx}">{{item}} </a-radio>
-    </a-radio-group>
-  </div>
+  <a-radio-group name="radioGroup" :default-value="1">
+    <a-radio :value="1"> A </a-radio>
+    <a-radio :value="2"> B </a-radio>
+    <a-radio :value="3"> C </a-radio>
+    <a-radio :value="4"> D </a-radio>
+  </a-radio-group>
 </template>
-<script>
-export default {
-  props: ['radio']
-  data() {
-    return {
-      value: 1
-    };
-  },
-  methods: {
-    onChange(e) {
-      console.log('radio checked', e.target.value);
-    }
-  }
-};
-</script>
