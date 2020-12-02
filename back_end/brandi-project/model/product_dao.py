@@ -1,10 +1,10 @@
 class ProductDao:
     def get_product_information(self, db, product_id):
         """
-        상품 상세정보 불러오기
-        :param db: 데이터베이스 연결객체
-        :param product_id: 상품 아이디(ID)
-        :return: 상품 상세정보
+        전달받은 상품 아이디(Params)에 해당하는 정보를 DB Select하는 함수입니다
+        :param db: Database 연결 객체
+        :param product_id: 대상 상품 아이디(ID)
+        :return: 대상 상품 상세정보
         """
 
         with db.cursor() as cursor:
@@ -12,7 +12,7 @@ class ProductDao:
             SELECT
                 p.id,
                 p.product_name,
-                floor(p.price) AS price,
+                p.price,
                 p.short_introduction,
                 p.product_detail_information,
                 p.discount_ratio,
@@ -26,7 +26,7 @@ class ProductDao:
                 p.display_status_id,
                 p.modifier_id,
                 p.product_subcategory_id,
-                images.product_image
+                i.product_image
             FROM
                 products AS p
             LEFT JOIN
@@ -42,7 +42,7 @@ class ProductDao:
             LEFT JOIN
                 product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
             LEFT JOIN
-                product_images AS images ON p.id = images.product_id
+                product_images AS i ON p.id = i.product_id
             WHERE
                 p.id = %s
         """, product_id)
@@ -51,13 +51,11 @@ class ProductDao:
 
     def insert_product(self, db, product_info):
         """
-        신규 상품 등록
-        :param db: 데이터베이스 연결객체
-        :param product_info: 신규 상품 정보
-        :return:
+        전달받은 상품 정보(Params)를 DB에 Insert하는 함수입니다.
+        :param db: 데이터베이스 연결 객체
+        :param product_info: 신규 상품의 정보
+        :return: 신규 등록한 상품의 아이디(ID)
         """
-
-        print(product_info)
 
         with db.cursor() as cursor:
             cursor.execute("""
@@ -95,3 +93,40 @@ class ProductDao:
             """, product_info)
 
             return cursor.lastrowid
+
+    def update_product_info(self, db, update_data):
+        """
+        전달받은 상품 정보(Params)를 DB에 update하는 함수입니다
+        :param db: 데이터베이스 연결 객체
+        :param update_data: 상품 수정 정보
+        """
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE
+                    products AS p
+                LEFT JOIN
+                    registration_status_type AS registration ON p.registration_status_id = registration.id
+                LEFT JOIN
+                    sale_status_type AS sale ON p.sale_status_id = sale.id
+                LEFT JOIN
+                    display_status_type AS display ON p.display_status_id = display.id
+                LEFT JOIN
+                    sellers AS seller ON p.modifier_id = seller.id
+                LEFT JOIN
+                    product_subcategories_type AS subcat ON p.product_subcategory_id = subcat.id
+                SET
+                    p.product_name               = %(product_name)s,
+                    p.price                      = %(price)s,
+                    p.short_introduction         = DEFAULT,
+                    p.product_detail_information = %(product_detail_information)s,
+                    p.discount_ratio             = DEFAULT,
+                    p.min_sale_quantity          = DEFAULT,
+                    p.max_sale_quantity          = DEFAULT,
+                    p.registration_status_id     = %(registration_status_id)s,
+                    p.sale_status_id             = %(sale_status_id)s,
+                    p.display_status_id          = %(display_status_id)s,
+                    p.modifier_id                = %(seller_id)s,
+                    p.product_subcategory_id     = %(product_subcategory_id)s
+                WHERE
+                    p.id = %(product_id)s
+            """, update_data)
