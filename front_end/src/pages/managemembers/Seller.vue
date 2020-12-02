@@ -196,6 +196,7 @@ export default {
     this.created_at = selectedSeller.created_at;
   },
   methods: {
+    // 이미지 업로드 ant design 컴포넌트 관련 함수
     handleChange(info) {
       if (info.file.status === 'uploading') {
         this.loading = true;
@@ -204,6 +205,8 @@ export default {
       if (info.file.status === 'done') {
         // Get this url from response in real world.
         getBase64(info.file.originFileObj, (response) => {
+          console.log(info.file.originFileObj);
+          console.log(response);
           this.imageUrl = response;
           this.loading = false;
         });
@@ -220,7 +223,7 @@ export default {
       }
       const isLt5M = file.size / 1024 / 1024 < 5;
       if (!isLt5M) {
-        message.error('Image must smaller than 2MB!');
+        message.error('허용 가능한 최대 파일사이즈 크기는 5MB 입니다.');
       }
       return isJpgOrPng && isLt5M;
     }
