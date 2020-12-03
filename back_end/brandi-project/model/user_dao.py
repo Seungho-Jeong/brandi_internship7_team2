@@ -210,7 +210,8 @@ class UserDao:
 
             sql += '''
                  ORDER BY info.id DESC
-                 LIMIT %(offset)s, %(limit)s
+                 LIMIT %(limit)s
+                 OFFSET %(offset)s
                 '''
 
             cursor.execute(sql, filters)
@@ -268,10 +269,7 @@ class UserDao:
                     seller.cs_contact,
                     status.name AS shop_status,
                     category.name AS category,
-                    info.modifier_id,
-                    m.manager_name,
-                    m.manager_mobile,
-                    m.manager_email
+                    info.modifier_id
                 FROM
                     sellers_informations AS info
                 INNER JOIN
@@ -280,13 +278,9 @@ class UserDao:
                     shop_status_type AS status ON info.shop_status_id = status.id
                 INNER JOIN
                     seller_categories_type AS category ON seller.seller_category_id = category.id
-                LEFT JOIN
-                    managers AS m ON info.seller_id = m.seller_id
                 WHERE
-                    info.is_delete = False AND 
-                    info.seller_id = %s AND
-                    m.ordering = 1 OR
-                    m.ordering IS NULL
+                    info.is_delete = false 
+                    AND info.seller_id = %s
                 LIMIT 1
             """, seller_id)
             return cursor.fetchone()
