@@ -77,17 +77,8 @@ class UserService:
         :return: 셀러 회원 목록
         """
 
-        if ('offset' in filters) and ('limit' not in filters):
-            filters['offset'] = int(filters['offset'])
-            filters['limit'] = filters['offset'] + 10
-
-        elif ('offset' not in filters) and ('limit' in filters):
-            filters['offset'] = 0
-            filters['limit'] = int(filters['limit'])
-
-        else:
-            filters['offset'] = 0
-            filters['limit'] = 10
+        filters['limit'] = int(filters['limit']) if 'limit' in filters else 10
+        filters['offset'] = (int(filters['offset']) - 1) * int(filters['limit']) if 'offset' in filters else 0
 
         count     = self.user_dao.get_seller_list_count(db, filters)
         user_info = self.user_dao.get_seller_list(db, filters)
@@ -194,7 +185,18 @@ class UserService:
         data.pop('managers')
         data['seller_id'] = seller_id
         data['modifier_id'] = modifier_id
+
         self.user_dao.update_seller_information(db, data)
+        manager_info = self.user_dao.get_managers(db, seller_id)
+
+        if not manager_info:
+            data['manager_name'] = None
+            data['manager_mobile'] = None
+            data['manager_email'] = None
+        else:
+            data['manager_name'] = manager_info[0]['manager_name']
+            data['manager_mobile'] = manager_info[0]['manager_mobile']
+            data['manager_email'] = manager_info[0]['manager_email']
 
         # 로그 생성
         user_log = self.user_dao.get_seller_logs(db, seller_id)

@@ -130,11 +130,13 @@ def user_endpoints(user_service):
 
             if ('start_date' in filters) and ('end_date' in filters):
                 if filters['end_date'] < filters['start_date']:
-                    raise InvalidValueException('end_date should not earlier than start_date', 400)
+                    raise InvalidValueException("'end_date' should not earlier than 'start_date'", 400)
 
-            if ('offset' in filters) and ('limit' in filters):
-                if filters['limit'] < filters['offset']:
-                    raise InvalidValueException('offset should not greater than limit', 400)
+            if ('offset' in filters) and (int(filters['offset']) <= 0):
+                raise InvalidValueException("only request an integer of 1 or more for 'offset'", 400)
+
+            if ('limit' in filters) and (int(filters['limit']) <= 0):
+                raise InvalidValueException("only request an integer of 1 or more for 'limit'", 400)
 
             sellers = user_service.get_seller_list(db, filters)
 
