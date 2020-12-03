@@ -235,6 +235,9 @@ def user_endpoints(user_service):
         except PathParameterException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
+        except InvalidValueException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except PermissionException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
