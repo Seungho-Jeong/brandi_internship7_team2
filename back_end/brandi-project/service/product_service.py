@@ -70,7 +70,7 @@ class ProductService:
 
         color_size_list = {
             'colors' : [dict(color) for color in color_list],
-            'size'   : [dict(size) for size in size_list]
+            'sizes'  : [dict(size) for size in size_list]
         }
 
         return color_size_list
