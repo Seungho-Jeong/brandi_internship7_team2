@@ -50,7 +50,7 @@ class UserDao:
                     %(seller_name_en)s,
                     %(cs_contact)s,
                     %(is_master)s,
-                    False
+                    false
                 )
             """, data)
 
@@ -117,12 +117,10 @@ class UserDao:
                 INNER JOIN
                     shop_status_type AS shop ON info.shop_status_id = shop.id
                 LEFT JOIN
-                    managers AS m ON info.seller_id = m.seller_id
+                    managers AS m ON info.seller_id = m.seller_id AND m.ordering = 1
                 WHERE
-                    info.is_delete = False AND 
-                    seller.is_master = False AND
-                    m.ordering = 1 OR
-                    m.ordering IS NULL
+                    info.is_delete = false
+                    AND seller.is_master = false
                 """
 
             if 'id' in filters:
@@ -134,11 +132,11 @@ class UserDao:
             if 'name_ko' in filters:
                 sql += ' AND seller.seller_name_ko = %(name_ko)s'
             if 'manager_name' in filters:
-                sql += ' AND manager.manager_name = %(manager_name)s'
+                sql += ' AND m.manager_name = %(manager_name)s'
             if 'manager_mobile' in filters:
-                sql += ' AND manager.manger_mobile = %(manger_mobile)s'
+                sql += ' AND m.manger_mobile = %(manger_mobile)s'
             if 'manager_email' in filters:
-                sql += ' AND manager.manager_email = %(manager_email)s'
+                sql += ' AND m.manager_email = %(manager_email)s'
             if 'category' in filters:
                 sql += ' AND category.id = %(category)s'
             if 'start_date' in filters:
@@ -181,12 +179,10 @@ class UserDao:
                 INNER JOIN
                     shop_status_type AS shop ON info.shop_status_id = shop.id
                 LEFT JOIN
-                    managers AS m ON info.seller_id = m.seller_id
+                    managers AS m ON info.seller_id = m.seller_id AND m.ordering = 1
                 WHERE
-                    info.is_delete = False AND 
-                    seller.is_master = False AND
-                    m.ordering = 1 OR
-                    m.ordering IS NULL
+                    info.is_delete = false  
+                    AND seller.is_master = false
                 """
 
             if 'id' in filters:
@@ -198,11 +194,11 @@ class UserDao:
             if 'name_ko' in filters:
                 sql += ' AND seller.seller_name_ko = %(name_ko)s'
             if 'manager_name' in filters:
-                sql += ' AND manager.manager_name = %(manager_name)s'
+                sql += ' AND m.manager_name = %(manager_name)s'
             if 'manager_mobile' in filters:
-                sql += ' AND manager.manger_mobile = %(manger_mobile)s'
+                sql += ' AND m.manger_mobile = %(manger_mobile)s'
             if 'manager_email' in filters:
-                sql += ' AND manager.manager_email = %(manager_email)s'
+                sql += ' AND m.manager_email = %(manager_email)s'
             if 'category' in filters:
                 sql += ' AND category.id = %(category)s'
             if 'start_date' in filters:
@@ -213,7 +209,7 @@ class UserDao:
                 '''
 
             sql += '''
-                 ORDER BY info.id ASC
+                 ORDER BY info.id DESC
                  LIMIT %(offset)s, %(limit)s
                 '''
 
@@ -429,6 +425,7 @@ class UserDao:
                     seller_id = %s
                 ORDER BY
                     ordering ASC
+                LIMIT 3
             """, seller_id)
 
             return cursor.fetchall()
@@ -476,8 +473,8 @@ class UserDao:
                     manager_email = %(manager_email)s,
                     ordering = %(ordering)s
                 WHERE
-                    seller_id = %(seller_id)s AND
-                    ordering = %(ordering)s
+                    seller_id = %(seller_id)s
+                    AND ordering = %(ordering)s
             """, data)
 
     def delete_managers(self, db, data):
@@ -492,8 +489,8 @@ class UserDao:
                 DELETE FROM
                     managers
                 WHERE
-                    seller_id = %(seller_id)s AND
-                    ordering = %(ordering)s
+                    seller_id = %(seller_id)s
+                    AND ordering = %(ordering)s
             """, data)
 
     def create_seller_logs(self, db, data):
@@ -586,7 +583,8 @@ class UserDao:
                 WHERE
                     seller_id = %s
                 ORDER BY
-                    id DESC LIMIT 1
+                    id DESC 
+                LIMIT 1
             """, seller_id)
 
             return cursor.fetchone()

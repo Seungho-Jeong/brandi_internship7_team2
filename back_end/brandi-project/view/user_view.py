@@ -1,12 +1,20 @@
 from flask import Blueprint, request, jsonify
 
-from util.exception import ExistsException, NotExistsException, InvalidValueException
-from db_connection  import db_connection
-from util.decorator import login_decorator
+from util.exception import (
+    ExistsException,
+    NotExistsException,
+    InvalidValueException,
+    PermissionException,
+    PathParameterException
+)
+from util.validation import KeywordValidation
+from db_connection   import db_connection
+from util.decorator  import login_decorator
 
 
 def user_endpoints(user_service):
     user_app = Blueprint('user_app', __name__, url_prefix='/user')
+    keyword_validation = KeywordValidation()
 
     @user_app.route('/signup', methods=['POST'])
     def sign_up():
@@ -16,8 +24,8 @@ def user_endpoints(user_service):
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
 
             user_service.sign_up(db, data)
             db.commit()
@@ -40,24 +48,30 @@ def user_endpoints(user_service):
     def sign_in():
         """
         유저 로그인
+        account, password
         :return: access_token
         """
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
+
+            keyword_validation.signin(data)
 
             access_token = user_service.sign_in(db, data)
             db.commit()
 
             return jsonify({'message' : 'success', 'access_token' : access_token}), 200
+        except PermissionException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except NotExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return jsonify({'message': 'key_error {}'.format(e)}), 400
+            return jsonify({'message': format(e)}), 400
         except Exception as e:
             db.rollback()
             return jsonify({'message' : 'error {}'.format(e)}), 500
@@ -101,7 +115,7 @@ def user_endpoints(user_service):
             db = db_connection()
 
             if not request.is_master:
-                return jsonify({'message' : 'permission denied'}), 403
+                raise PermissionException
 
             filter_list = ['id', 'account', 'name_en', 'name_ko',
                            'manager_name', 'manager_mobile', 'manager_email',
@@ -118,10 +132,17 @@ def user_endpoints(user_service):
                 if filters['end_date'] < filters['start_date']:
                     raise InvalidValueException('end_date should not earlier than start_date', 400)
 
+            if ('offset' in filters) and ('limit' in filters):
+                if filters['limit'] < filters['offset']:
+                    raise InvalidValueException('offset should not greater than limit', 400)
+
             sellers = user_service.get_seller_list(db, filters)
 
             return jsonify({'message' : 'success', 'total_count' : sellers['count'],
                             'seller_list' : sellers['seller_list']}), 200
+
+        except PermissionException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except InvalidValueException as e:
             return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
@@ -148,19 +169,23 @@ def user_endpoints(user_service):
             # 마스터
             if request.is_master:
                 if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
+                    raise PathParameterException('seller_id')
 
                 seller_id = seller_id['seller_id']
             # 셀러
             else:
                 if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
+                    raise PermissionException
 
                 seller_id = request.seller_id
 
             seller_info = user_service.get_seller_information(db, seller_id)
 
             return jsonify({'message' : 'success', 'seller_info': seller_info}), 200
+        except PathParameterException as e:
+            return jsonify({'message' : e.message}), e.status_code
+        except PermissionException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except NotExistsException as e:
             return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
@@ -182,20 +207,20 @@ def user_endpoints(user_service):
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
 
             # 마스터
             if request.is_master:
                 if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
+                    raise PathParameterException('seller_id')
 
                 seller_id = seller_id['seller_id']
                 modifier_id = request.seller_id
             # 셀러
             else:
                 if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
+                    raise PermissionException
 
                 seller_id = request.seller_id
                 modifier_id = request.seller_id
@@ -205,6 +230,12 @@ def user_endpoints(user_service):
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except PathParameterException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
+        except PermissionException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
             return jsonify({'message' : 'key_error {}'.format(e)}), 400
@@ -226,17 +257,20 @@ def user_endpoints(user_service):
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
 
             if not request.is_master:
-                return jsonify({'message' : 'permission denied'}), 403
+                raise PermissionException
 
             user_service.update_shop_status(db, data, seller_id)
 
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except PermissionException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except NotExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -269,18 +303,22 @@ def user_endpoints(user_service):
 
             if request.is_master:
                 if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
+                    raise PathParameterException('seller_id')
 
                 seller_id = seller_id['seller_id']
             else:
                 if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
+                    raise PermissionException
 
                 seller_id = request.seller_id
 
             log_list = user_service.get_seller_status_log(db, seller_id)
 
             return jsonify({'message' : 'success', 'log_list' : log_list}), 200
+        except PathParameterException as e:
+            return jsonify({'message' : e.message}), e.status_code
+        except PermissionException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:

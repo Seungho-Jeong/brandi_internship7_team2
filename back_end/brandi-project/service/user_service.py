@@ -77,11 +77,17 @@ class UserService:
         :return: 셀러 회원 목록
         """
 
-        filters['offset'] = int(filters['offset']) if 'offset' in filters else 0
-        filters['limit']  = int(filters['limit']) if 'limit' in filters else 10
+        if ('offset' in filters) and ('limit' not in filters):
+            filters['offset'] = int(filters['offset'])
+            filters['limit'] = filters['offset'] + 10
 
-        if filters['offset'] > filters['limit']:
-            raise InvalidValueException('offset should not greater than limit', 400)
+        elif ('offset' not in filters) and ('limit' in filters):
+            filters['offset'] = 0
+            filters['limit'] = int(filters['limit'])
+
+        else:
+            filters['offset'] = 0
+            filters['limit'] = 10
 
         count     = self.user_dao.get_seller_list_count(db, filters)
         user_info = self.user_dao.get_seller_list(db, filters)
