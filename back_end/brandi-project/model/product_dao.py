@@ -1,5 +1,19 @@
 class ProductDao:
-    def get_product_information(self, db, search_params):
+    def select_match_product_and_seller(self, db, inspection_data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id
+                FROM
+                    products
+                WHERE
+                    id = %(product_id)s
+                    AND seller_id = %(seller_id)s
+            """, inspection_data)
+
+            return cursor.fetchone()
+
+    def select_product_information(self, db, search_params):
         """
         전달받은 상품 아이디(Params)에 해당하는 정보를 DB Select하는 함수입니다
         :param search_params: 조회대상의 ID(product_id)가 포함된 매개변수
@@ -56,6 +70,93 @@ class ProductDao:
 
         return cursor.fetchone()
 
+    def select_product_seller(self, db, seller_name):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id
+                FROM
+                    sellers
+                WHERE
+                    seller_name_ko = %s
+            """, seller_name)
+
+            return cursor.fetchone()
+
+    def select_product_category(self, db, seller_id):
+        """
+        상품의 카테고리(1차 카테고리)를 DB Select하는 함수입니다.
+        :param seller_id: 등록할 상품을 보유한 셀러 ID
+        :param db: 데이터베이스 연결 객체
+        :return: 카테고리 리스트
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    p_cat.id,
+                    p_cat.name
+                FROM
+                    product_categories_type AS p_cat
+                    INNER JOIN
+                        seller_categories_type AS s_cat
+                        ON s_cat.seller_type_id = p_cat.seller_type_id
+                    INNER JOIN
+                        sellers AS s
+                        ON s.seller_category_id = s_cat.id
+                WHERE
+                    s.id = %s
+            """, seller_id)
+
+            return cursor.fetchall()
+
+    def select_product_subcategory(self, db, category_id):
+        """
+        상품의 서브 카테고리(2차 카테고리)를 DB Select하는 함수입니다
+        :param db: 데이터베이스 연결 객체
+        :param category_id: 카테고리 ID (product_category_id)
+        :return: 서브 카테고리 리스트
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    subcat.id,
+                    subcat.name
+                FROM
+                    product_subcategories_type AS subcat
+                    INNER JOIN product_categories_type AS cat
+                        ON subcat.product_category_id = cat.id
+                WHERE
+                    subcat.product_category_id = %s
+            """, category_id)
+
+            return cursor.fetchall()
+
+    def select_product_color(self, db):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    name
+                FROM
+                    colors_type
+            """)
+
+            return cursor.fetchall()
+
+    def select_product_size(self, db):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    name
+                FROM
+                    sizes_type
+            """)
+
+            return cursor.fetchall()
+
     def insert_product(self, db, product_info):
         """
         전달받은 상품 정보(Params)를 DB에 Insert하는 함수입니다.
@@ -109,24 +210,24 @@ class ProductDao:
         """
 
         with db.cursor() as cursor:
-            cursor.execute("""
+            modify_result = cursor.execute("""
                 UPDATE
                     products AS p
-                        LEFT JOIN
-                            registration_status_type AS registration
-                            ON p.registration_status_id = registration.id
-                        LEFT JOIN
-                            sale_status_type AS sale
-                            ON p.sale_status_id = sale.id
-                        LEFT JOIN
-                            display_status_type AS display
-                            ON p.display_status_id = display.id
-                        LEFT JOIN
-                            sellers AS seller
-                            ON p.modifier_id = seller.id
-                        LEFT JOIN
-                            product_subcategories_type AS subcat
-                            ON p.product_subcategory_id = subcat.id
+                    LEFT JOIN
+                        registration_status_type AS registration
+                        ON p.registration_status_id = registration.id
+                    LEFT JOIN
+                        sale_status_type AS sale
+                        ON p.sale_status_id = sale.id
+                    LEFT JOIN
+                        display_status_type AS display
+                        ON p.display_status_id = display.id
+                    LEFT JOIN
+                        sellers AS seller
+                        ON p.modifier_id = seller.id
+                    LEFT JOIN
+                        product_subcategories_type AS subcat
+                        ON p.product_subcategory_id = subcat.id
                 SET
                     p.product_name               = %(product_name)s,
                     p.price                      = %(price)s,
@@ -144,68 +245,4 @@ class ProductDao:
                     p.id = %(product_id)s
             """, update_data)
 
-    def get_product_category(self, db, seller_id):
-        """
-        상품의 카테고리(1차 카테고리)를 DB Select하는 함수입니다.
-        :param seller_id: 등록할 상품을 보유한 셀러 ID
-        :param db: 데이터베이스 연결 객체
-        :return: 카테고리 리스트
-        """
-
-        with db.cursor() as cursor:
-            cursor.execute("""
-                SELECT 
-                    p_cat.id, p_cat.name, p_cat.seller_type_id
-                FROM
-                    product_categories_type AS p_cat
-                        INNER JOIN
-                            seller_categories_type AS s_cat
-                            ON s_cat.seller_type_id = p_cat.seller_type_id
-                        INNER JOIN
-                            sellers AS s
-                            ON s.seller_category_id = s_cat.id
-                WHERE
-                    s.id = %s
-            """, seller_id)
-
-            return cursor.fetchall()
-
-    def get_product_subcategory(self, db, category_id):
-        """
-        상품의 서브 카테고리(2차 카테고리)를 DB Select하는 함수입니다
-        :param db: 데이터베이스 연결 객체
-        :param category_id: 카테고리 ID (product_category_id)
-        :return: 서브 카테고리 리스트
-        """
-
-        with db.cursor() as cursor:
-            cursor.execute("""
-                SELECT
-                    subcat.id,
-                    subcat.name,
-                    subcat.product_category_id,
-                    cat.name AS product_category_name
-                FROM
-                    product_subcategories_type AS subcat
-                    INNER JOIN product_categories_type AS cat
-                        ON subcat.product_category_id = cat.id
-                WHERE
-                    subcat.product_category_id = %s
-            """, category_id)
-
-            return cursor.fetchall()
-
-    def match_check_product_and_seller(self, db, inspection_data):
-        print(f"dao_check_auth - inspection data : {inspection_data}")
-        with db.cursor() as cursor:
-            cursor.execute("""
-                SELECT
-                    id
-                FROM
-                    products
-                WHERE
-                    id = %(product_id)s
-                    AND seller_id = %(seller_id)s
-            """, inspection_data)
-
-            return cursor.fetchone()
+            return modify_result
