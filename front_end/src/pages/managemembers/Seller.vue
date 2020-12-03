@@ -18,6 +18,24 @@
           <tr>
             <th>셀러 프로필</th>
             <td>
+              <a-upload
+                v-model="fileList"
+                name="avatar"
+                list-type="picture-card"
+                class="avatar-uploader"
+                :show-upload-list="false"
+                action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+                :before-upload="beforeUpload"
+                @change="handleChange"
+              >
+                <img v-if="imageUrl" :src="imageUrl" alt="avatar" />
+                <div v-else>
+                  <!-- todo -->
+                  <loading-outlined v-if="loading" />
+                  <plus-outlined v-else />
+                  <div class="ant-upload-text">Upload</div>
+                </div>
+              </a-upload>
               <p class="explanation">
                 셀러 프로필 확장자는 jpg, jpeg, png 만 가능하며, 허용 가능한
                 최대 파일사이즈 크기는 5MB 입니다.
@@ -26,11 +44,11 @@
           </tr>
           <tr>
             <th>셀러 상태</th>
-            <td>ㅇ</td>
+            <td>{{ shop_status }}</td>
           </tr>
           <tr>
             <th>셀러 속성</th>
-            <td>ㅇ</td>
+            <td>{{ seller_category_id }}</td>
           </tr>
           <tr>
             <td class="explanation" colspan="2">
@@ -41,15 +59,15 @@
           </tr>
           <tr>
             <th>셀러 한글명</th>
-            <td>ㅇ</td>
+            <td>{{ seller_name_ko }}</td>
           </tr>
           <tr>
             <th>셀러 영문명</th>
-            <td>ㅇ</td>
+            <td>{{ seller_name_en }}</td>
           </tr>
           <tr>
             <th>셀러 계정</th>
-            <td>ㅇ</td>
+            <td>{{ account }}</td>
           </tr>
         </tbody>
       </table>
@@ -122,12 +140,96 @@ import PageHeading from '../../components/reusables/PageHeading.vue';
 import PageBar from '../../components/reusables/PageBar.vue';
 import PageSection from '../../components/reusables/PageSection.vue';
 
+import { Upload } from 'ant-design-vue';
+import { PlusOutlined, LoadingOutlined } from '@ant-design/icons-vue';
+import 'ant-design-vue/dist/antd.less';
+import { message } from 'ant-design-vue';
+function getBase64(img, callback) {
+  const reader = new FileReader();
+  reader.addEventListener('load', () => callback(reader.result));
+  reader.readAsDataURL(img);
+}
+
 export default {
   name: 'Seller',
+  inject: ['sellerData'],
+  props: ['sellerId'],
   components: {
+    'a-upload': Upload,
+    PlusOutlined,
+    LoadingOutlined,
     PageHeading,
     PageBar,
     PageSection
+  },
+  data() {
+    return {
+      seller_id: '',
+      account: '',
+      seller_name_en: '',
+      seller_name_ko: '',
+      manager_name: '',
+      shop_status: '',
+      manager_mobile: '',
+      manager_email: '',
+      seller_category_id: '',
+      created_at: '',
+      fileList: [],
+      loading: false,
+      imageUrl: ''
+    };
+  },
+  created() {
+    const { sellerData, sellerId } = this;
+    const selectedSeller = sellerData.find(
+      (seller) => seller.seller_id == sellerId
+    );
+    this.seller_id = selectedSeller.seller_id;
+    this.account = selectedSeller.account;
+    this.seller_name_en = selectedSeller.seller_name_en;
+    this.seller_name_ko = selectedSeller.seller_name_ko;
+    this.manager_name = selectedSeller.manager_name;
+    this.shop_status = selectedSeller.shop_status;
+    this.manager_mobile = selectedSeller.manager_mobile;
+    this.manager_email = selectedSeller.manager_email;
+    this.seller_category_id = selectedSeller.seller_category_id;
+    this.created_at = selectedSeller.created_at;
+  },
+  methods: {
+    // 이미지 업로드 ant design 컴포넌트 관련 함수
+    handleChange(info) {
+      if (info.file.status === 'uploading') {
+        this.loading = true;
+        return;
+      }
+      if (info.file.status === 'done') {
+        // Get this url from response in real world.
+        getBase64(info.file.originFileObj, (response) => {
+          console.log(info.file.originFileObj);
+          console.log(response);
+          this.imageUrl = response;
+          this.loading = false;
+        });
+      }
+      if (info.file.status === 'error') {
+        this.loading = false;
+      }
+    },
+    beforeUpload(file) {
+      const isJpgOrPng =
+        file.type === 'image/jpeg' || file.type === 'image/png';
+      if (!isJpgOrPng) {
+        message.error('You can only upload JPG file!');
+      }
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        message.error('허용 가능한 최대 파일사이즈 크기는 5MB 입니다.');
+      }
+      return isJpgOrPng && isLt5M;
+    }
+  },
+  beforeUpdate() {
+    console.log(this.fileList);
   }
 };
 </script>
@@ -159,6 +261,23 @@ table {
     .explanation {
       color: #1f91ff;
     }
+  }
+  .avatar-uploader > .ant-upload {
+    width: 128px;
+    height: 128px;
+  }
+  .ant-upload-select-picture-card {
+    // width: 128px;
+    // height: 128px;
+    i {
+      font-size: 32px;
+      color: #999;
+    }
+  }
+
+  .ant-upload-select-picture-card .ant-upload-text {
+    margin-top: 8px;
+    color: #666;
   }
 }
 

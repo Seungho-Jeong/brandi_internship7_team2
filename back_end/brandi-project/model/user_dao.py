@@ -246,7 +246,6 @@ class UserDao:
         :param seller_id: seller_id
         :return: 셀러 상세정보
         """
-
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -284,13 +283,12 @@ class UserDao:
                 LEFT JOIN
                     managers AS m ON info.seller_id = m.seller_id
                 WHERE
-                    info.is_delete = false 
-                    AND info.seller_id = %s
-                    AND m.ordering = 1
-                    OR m.ordering IS NULL
+                    info.is_delete = False AND 
+                    info.seller_id = %s AND
+                    m.ordering = 1 OR
+                    m.ordering IS NULL
                 LIMIT 1
             """, seller_id)
-
             return cursor.fetchone()
 
     def update_seller_information(self, db, data):
