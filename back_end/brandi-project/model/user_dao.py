@@ -430,7 +430,7 @@ class UserDao:
         :param db: db_connection
         :param data: 매니저 정보
         """
-
+        
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO managers(

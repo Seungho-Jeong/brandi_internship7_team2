@@ -5,7 +5,6 @@ from flask import Blueprint, request, jsonify
 
 from util.exception import (
     ALLOWED_EXTENSIONS,
-    MAX_FILE_SIZE,
     ExistsException,
     NotExistsException,
     InvalidValueException,
@@ -14,8 +13,9 @@ from util.exception import (
     FileException
 )
 from util.validation import KeywordValidation
-from db_connection   import db_connection
+from db_connection   import db_connection, s3_connection
 from util.decorator  import login_decorator
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 def user_endpoints(user_service):
@@ -220,6 +220,7 @@ def user_endpoints(user_service):
         db = None
         try:
             db = db_connection()
+            s3 = s3_connection()
             form_data = dict(request.form)
             data = json.loads(form_data['body'])
 
@@ -229,22 +230,10 @@ def user_endpoints(user_service):
                     raise FileException('the extension of that file is not available', 400)
                 data['profile_image'] = profile_image if profile_image.filename else None
 
-                if data['profile_image'] and len(data['profile_image'].read()) > MAX_FILE_SIZE:
-                    raise FileException('image files cannot exceed 5MB', 400)
-
                 background_image = request.files['background_image'] if 'background_image' in request.files else None
                 if background_image and not allowed_file(background_image.filename):
                     raise FileException('the extension of that file is not available', 400)
                 data['background_image'] = background_image if background_image.filename else None
-
-                if data['background_image']:
-                    image = Image.open(data['background_image'])
-                    width, height = image.size
-
-                    if len(data['background_image'].read()) > MAX_FILE_SIZE:
-                        raise FileException('image files cannot exceed 5MB', 400)
-                    if width < 1200 or height < 850:
-                        raise FileException('please register background Image in size 1200 * 850 or larger', 400)
 
             # 마스터
             if request.is_master:
@@ -261,11 +250,14 @@ def user_endpoints(user_service):
                 seller_id = request.seller_id
                 modifier_id = request.seller_id
 
-            user_service.update_seller_information(db, data, seller_id, modifier_id)
+            user_service.update_seller_information(db, data, s3, seller_id, modifier_id)
 
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestEntityTooLarge:
+            db.rollback()
+            return jsonify({'message': 'image files cannot exceed 5MB'}), 400
         except FileException as e:
             db.rollback()
             return jsonify({'message': e.message}), e.status_code

@@ -1,13 +1,12 @@
 import jwt
-import os
 import bcrypt
 from datetime import datetime, timedelta
+from PIL import  Image
 
 from flask          import current_app
-from werkzeug.utils import secure_filename
 
-from util.exception import NotExistsException, ExistsException, InvalidValueException
-from config         import SECRET, ALGORITHM
+from util.exception import NotExistsException, ExistsException, InvalidValueException, FileException
+from config         import SECRET, ALGORITHM, BUCKET_NAME
 
 
 class UserService:
@@ -112,11 +111,12 @@ class UserService:
 
         return user_info
 
-    def update_seller_information(self, db, data, seller_id, modifier_id):
+    def update_seller_information(self, db, data, s3, seller_id, modifier_id):
         """
         셀러 상세정보 수정
         담당매니저를 3개이상 등록하려고할 경우는 예외처리
         담당매니저 부분은 기존의 데이터와 비교해서 수정하거나 생성,삭제 처리
+        :param s3: AWS S3 connection
         :param db: db_connection
         :param data: 셀러 상세정보
         :param modifier_id: modifier_id (수정자)
@@ -154,9 +154,9 @@ class UserService:
 
                 order_index += 1
         else:
-            manager_info['seller_id'] = seller_id
             if not data['managers']:  # 기존에 존재했으나 request 는 없을 경우 (전체삭제)
                 for i in range(ordering['ordering']):
+                    manager_info['seller_id'] = seller_id
                     manager_info['ordering'] = order_index
                     self.user_dao.delete_managers(db, manager_info)
                     order_index += 1
@@ -167,6 +167,7 @@ class UserService:
 
                 for manager in data['managers']:
                     manager_info = manager
+                    manager_info['seller_id'] = seller_id
                     manager_info['ordering'] = order_index
                     self.user_dao.create_managers(db, manager_info)
                     order_index += 1
@@ -237,23 +238,47 @@ class UserService:
         data['seller_id'] = seller_id
         data['modifier_id'] = modifier_id
 
+        # 파일 업로드
         path = current_app.config['UPLOAD_FOLDER'] + f'/{seller_id}/'
         if data['profile_image']:
             profile_image = data['profile_image']
             file_name = 'profile.' + profile_image.filename.split('.')[1].lower()
             image_path = path + 'profile_image'
             data['profile_image'] = f'{image_path}/{file_name}'
+            
+            s3_path = f'image/user_image/{seller_id}/{file_name}'
+            s3.put_object(
+                Bucket=BUCKET_NAME,
+                Body=profile_image,
+                Key=s3_path,
+                ContentType=profile_image.content_type,
+                ContentDisposition='attachment')
+            location = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
+            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
+            data['profile_image'] = image_url
 
-            os.makedirs(image_path, exist_ok=True)
-            profile_image.save(os.path.join(image_path, file_name))
         if data['background_image']:
             background_image = data['background_image']
             file_name = 'background.' + background_image.filename.split('.')[1].lower()
             image_path = path + 'background_image'
             data['background_image'] = f'{image_path}/{file_name}'
 
-            os.makedirs(image_path, exist_ok=True)
-            background_image.save(os.path.join(image_path, file_name))
+            s3_path = f'image/user_image/{seller_id}/{file_name}'
+            s3.put_object(
+                Bucket=BUCKET_NAME,
+                Body=background_image,
+                Key=s3_path,
+                ContentType=background_image.content_type,
+                ContentDisposition='attachment')
+            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
+
+            image = Image.open(background_image)
+            width, height = image.size
+
+            if width < 1200 or height < 850:
+                raise FileException('please register background Image in size 1200 * 850 or larger', 400)
+
+            data['background_image'] = image_url
 
         self.user_dao.update_seller_information(db, data)
 
