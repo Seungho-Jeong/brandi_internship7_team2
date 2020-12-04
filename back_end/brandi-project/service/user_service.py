@@ -1,6 +1,10 @@
 import jwt
+import os
 import bcrypt
 from datetime import datetime, timedelta
+
+from flask          import current_app
+from werkzeug.utils import secure_filename
 
 from util.exception import NotExistsException, ExistsException, InvalidValueException
 from config         import SECRET, ALGORITHM
@@ -118,6 +122,7 @@ class UserService:
         :param modifier_id: modifier_id (수정자)
         :param seller_id: seller_id
         """
+
         manager_info = {}
         order_index = 1
 
@@ -231,6 +236,24 @@ class UserService:
         data.pop('managers')
         data['seller_id'] = seller_id
         data['modifier_id'] = modifier_id
+
+        path = current_app.config['UPLOAD_FOLDER'] + f'/{seller_id}/'
+        if data['profile_image']:
+            profile_image = data['profile_image']
+            file_name = 'profile.' + profile_image.filename.split('.')[1].lower()
+            image_path = path + 'profile_image'
+            data['profile_image'] = f'{image_path}/{file_name}'
+
+            os.makedirs(image_path, exist_ok=True)
+            profile_image.save(os.path.join(image_path, file_name))
+        if data['background_image']:
+            background_image = data['background_image']
+            file_name = 'background.' + background_image.filename.split('.')[1].lower()
+            image_path = path + 'background_image'
+            data['background_image'] = f'{image_path}/{file_name}'
+
+            os.makedirs(image_path, exist_ok=True)
+            background_image.save(os.path.join(image_path, file_name))
 
         self.user_dao.update_seller_information(db, data)
 

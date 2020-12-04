@@ -1,11 +1,17 @@
+import json
+from PIL import Image
+
 from flask import Blueprint, request, jsonify
 
 from util.exception import (
+    ALLOWED_EXTENSIONS,
+    MAX_FILE_SIZE,
     ExistsException,
     NotExistsException,
     InvalidValueException,
     PermissionException,
-    PathParameterException
+    PathParameterException,
+    FileException
 )
 from util.validation import KeywordValidation
 from db_connection   import db_connection
@@ -15,6 +21,10 @@ from util.decorator  import login_decorator
 def user_endpoints(user_service):
     user_app = Blueprint('user_app', __name__, url_prefix='/user')
     keyword_validation = KeywordValidation()
+
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     @user_app.route('/signup', methods=['POST'])
     def sign_up():
@@ -210,7 +220,31 @@ def user_endpoints(user_service):
         db = None
         try:
             db = db_connection()
-            data = request.json
+            form_data = dict(request.form)
+            data = json.loads(form_data['body'])
+
+            if request.files:
+                profile_image = request.files['profile_image'] if 'profile_image' in request.files else None
+                if profile_image and not allowed_file(profile_image.filename):
+                    raise FileException('the extension of that file is not available', 400)
+                data['profile_image'] = profile_image if profile_image.filename else None
+
+                if data['profile_image'] and len(data['profile_image'].read()) > MAX_FILE_SIZE:
+                    raise FileException('image files cannot exceed 5MB', 400)
+
+                background_image = request.files['background_image'] if 'background_image' in request.files else None
+                if background_image and not allowed_file(background_image.filename):
+                    raise FileException('the extension of that file is not available', 400)
+                data['background_image'] = background_image if background_image.filename else None
+
+                if data['background_image']:
+                    image = Image.open(data['background_image'])
+                    width, height = image.size
+
+                    if len(data['background_image'].read()) > MAX_FILE_SIZE:
+                        raise FileException('image files cannot exceed 5MB', 400)
+                    if width < 1200 or height < 850:
+                        raise FileException('please register background Image in size 1200 * 850 or larger', 400)
 
             # 마스터
             if request.is_master:
@@ -232,6 +266,9 @@ def user_endpoints(user_service):
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except FileException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except PathParameterException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -324,16 +361,6 @@ def user_endpoints(user_service):
             return jsonify({'message' : e.message}), e.status_code
         except PermissionException as e:
             return jsonify({'message' : e.message}), e.status_code
-        except Exception as e:
-            return jsonify({'message' : 'error {}'.format(e)}), 500
-        finally:
-            if db:
-                db.close()
-
-    def upload_files():
-        db = None
-        try:
-            db = db_connection()
         except Exception as e:
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:

@@ -2,6 +2,10 @@ config.py
 *.idea
 venv/
 .idea/
+.idea/*
+user_image
+user_image/
+user_image.*
 
 # temporary files
 *.log
