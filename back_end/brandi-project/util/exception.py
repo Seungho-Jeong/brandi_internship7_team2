@@ -1,3 +1,6 @@
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+
+
 class Errors(Exception):
     def __init__(self, message, status_code):
         self.message = 'error {}'.format(message)
@@ -17,6 +20,10 @@ class JwtTokenException(Errors):
 
 
 class InvalidValueException(Errors):
+    pass
+
+
+class FileException(Errors):
     pass
 
 

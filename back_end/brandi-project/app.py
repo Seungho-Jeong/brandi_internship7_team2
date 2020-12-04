@@ -28,6 +28,10 @@ def create_app():
     CORS(app, resources={r'*': {'origins': '*'}})
     app.json_encoder = CustomJsonEncoder
 
+    upload_folder = './user_image'
+    app.config['UPLOAD_FOLDER'] = upload_folder
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+
     # dao
     user_dao = UserDao()
     product_dao = ProductDao()

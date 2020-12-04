@@ -2,7 +2,7 @@ import jwt
 import json
 from functools import wraps
 
-from flask import request
+from flask import request, jsonify
 
 from db_connection  import db_connection
 from config         import SECRET, ALGORITHM
@@ -37,9 +37,9 @@ def login_decorator(func):
                 raise JwtTokenException('invalid token', 401)
 
         except jwt.ExpiredSignatureError:
-            return json.dumps({'message' : 'expired token'}), 401
+            return jsonify({'message' : 'expired token'}), 401
         except jwt.DecodeError:
-            return json.dumps({'message' : 'token decode error'}), 400
+            return jsonify({'message' : 'token decode error'}), 400
         finally:
             if db:
                 db.close()

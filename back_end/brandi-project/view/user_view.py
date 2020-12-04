@@ -1,20 +1,30 @@
+import json
+from PIL import Image
+
 from flask import Blueprint, request, jsonify
 
 from util.exception import (
+    ALLOWED_EXTENSIONS,
     ExistsException,
     NotExistsException,
     InvalidValueException,
     PermissionException,
-    PathParameterException
+    PathParameterException,
+    FileException
 )
 from util.validation import KeywordValidation
-from db_connection   import db_connection
+from db_connection   import db_connection, s3_connection
 from util.decorator  import login_decorator
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 def user_endpoints(user_service):
     user_app = Blueprint('user_app', __name__, url_prefix='/user')
     keyword_validation = KeywordValidation()
+
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     @user_app.route('/signup', methods=['POST'])
     def sign_up():
@@ -210,7 +220,20 @@ def user_endpoints(user_service):
         db = None
         try:
             db = db_connection()
-            data = request.json
+            s3 = s3_connection()
+            form_data = dict(request.form)
+            data = json.loads(form_data['body'])
+
+            if request.files:
+                profile_image = request.files['profile_image'] if 'profile_image' in request.files else None
+                if profile_image and not allowed_file(profile_image.filename):
+                    raise FileException('the extension of that file is not available', 400)
+                data['profile_image'] = profile_image if profile_image.filename else None
+
+                background_image = request.files['background_image'] if 'background_image' in request.files else None
+                if background_image and not allowed_file(background_image.filename):
+                    raise FileException('the extension of that file is not available', 400)
+                data['background_image'] = background_image if background_image.filename else None
 
             # 마스터
             if request.is_master:
@@ -227,11 +250,17 @@ def user_endpoints(user_service):
                 seller_id = request.seller_id
                 modifier_id = request.seller_id
 
-            user_service.update_seller_information(db, data, seller_id, modifier_id)
+            user_service.update_seller_information(db, data, s3, seller_id, modifier_id)
 
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestEntityTooLarge:
+            db.rollback()
+            return jsonify({'message': 'image files cannot exceed 5MB'}), 400
+        except FileException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except PathParameterException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -324,16 +353,6 @@ def user_endpoints(user_service):
             return jsonify({'message' : e.message}), e.status_code
         except PermissionException as e:
             return jsonify({'message' : e.message}), e.status_code
-        except Exception as e:
-            return jsonify({'message' : 'error {}'.format(e)}), 500
-        finally:
-            if db:
-                db.close()
-
-    def upload_files():
-        db = None
-        try:
-            db = db_connection()
         except Exception as e:
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:
