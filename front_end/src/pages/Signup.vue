@@ -19,17 +19,35 @@ eslint-disable vue/require-v-for-key */
         <div class="signup-subdiv account-and-pw">
           <h3>가입 정보</h3>
           <InputWithSpan
-            :input="account"
+            class="input"
+            :id="account.id"
+            :type="account.type"
+            :placeholder="account.placeholder"
+            :spanText="account.spanText[account.spanTextOption]"
+            :icon="account.icon"
+            :isValid="account.isValid"
             v-model.trim="account.value"
             @update:modelValue="validateInput(account.id)"
           />
           <InputWithSpan
-            :input="password"
+            class="input"
+            :id="password.id"
+            :type="password.type"
+            :placeholder="password.placeholder"
+            :spanText="password.spanText[password.spanTextOption]"
+            :icon="password.icon"
+            :isValid="password.isValid"
             v-model.trim="password.value"
             @update:modelValue="validateInput(password.id)"
           />
           <InputWithSpan
-            :input="passwordCheck"
+            class="input"
+            :id="passwordCheck.id"
+            :type="passwordCheck.type"
+            :placeholder="passwordCheck.placeholder"
+            :spanText="passwordCheck.spanText[passwordCheck.spanTextOption]"
+            :icon="passwordCheck.icon"
+            :isValid="passwordCheck.isValid"
             v-model.trim="passwordCheck.value"
             @update:modelValue="validateInput(passwordCheck.id)"
           />
@@ -37,7 +55,14 @@ eslint-disable vue/require-v-for-key */
         <div class="signup-subdiv manager-mobile">
           <h3>담당자 정보<span> (*실제 샾을 운영하시는 분)</span></h3>
           <InputWithSpan
-            :input="managerMobile"
+            class="input"
+            :id="managerMobile.id"
+            :type="managerMobile.type"
+            :placeholder="managerMobile.placeholder"
+            :spanText="managerMobile.spanText[managerMobile.spanTextOption]"
+            :explanation="managerMobile.explanation"
+            :icon="managerMobile.icon"
+            :isValid="managerMobile.isValid"
             v-model.trim="managerMobile.value"
             @update:modelValue="validateInput(managerMobile.id)"
           />
@@ -56,17 +81,35 @@ eslint-disable vue/require-v-for-key */
             />
           </div>
           <InputWithSpan
-            :input="sellerNameKo"
+            class="input"
+            :id="sellerNameKo.id"
+            :type="sellerNameKo.type"
+            :placeholder="sellerNameKo.placeholder"
+            :spanText="sellerNameKo.spanText[sellerNameKo.spanTextOption]"
+            :icon="sellerNameKo.icon"
+            :isValid="sellerNameKo.isValid"
             v-model.trim="sellerNameKo.value"
             @update:modelValue="validateInput(sellerNameKo.id)"
           />
           <InputWithSpan
-            :input="sellerNameEng"
+            class="input"
+            :id="sellerNameEng.id"
+            :type="sellerNameEng.type"
+            :placeholder="sellerNameEng.placeholder"
+            :spanText="sellerNameEng.spanText[sellerNameEng.spanTextOption]"
+            :icon="sellerNameEng.icon"
+            :isValid="sellerNameEng.isValid"
             v-model.trim="sellerNameEng.value"
             @update:modelValue="validateInput(sellerNameEng.id)"
           />
           <InputWithSpan
-            :input="csContact"
+            class="input"
+            :id="csContact.id"
+            :type="csContact.type"
+            :placeholder="csContact.placeholder"
+            :spanText="csContact.spanText[csContact.spanTextOption]"
+            :icon="csContact.icon"
+            :isValid="csContact.isValid"
             v-model.trim="csContact.value"
             @update:modelValue="validateInput(csContact.id)"
           />
@@ -105,7 +148,7 @@ export default {
         placeholder: '아이디',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-user',
+        icon: 'user',
         spanText: {
           1: '이미 사용중인 아이디 입니다.',
           2: '아이디의 최소 길이는 5글자 입니다.',
@@ -119,7 +162,7 @@ export default {
         placeholder: '비밀번호',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-lock',
+        icon: 'lock',
         spanText: {
           1: '비밀번호는 8~20글자의 영문대소문자, 숫자, 특수문자를 조합해야 합니다.'
         },
@@ -131,7 +174,7 @@ export default {
         placeholder: '비밀번호 재입력',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-check',
+        icon: 'check',
         spanText: { 1: '비밀번호가 일치하지 않습니다.' },
         spanTextOption: 1
       },
@@ -141,7 +184,7 @@ export default {
         placeholder: '핸드폰번호',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-phone',
+        icon: 'phone',
         spanText: {
           1: '올바른 정보를 입력해주세요.'
         },
@@ -168,7 +211,7 @@ export default {
         placeholder: '셀러명 (상호)',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-font',
+        icon: 'font',
         spanText: {
           1: '한글,영문,숫자만 입력해주세요.'
         },
@@ -180,7 +223,7 @@ export default {
         placeholder: '영문 셀러명 (영문상호)',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-font',
+        icon: 'font',
         spanText: {
           1: '셀러 영문명은 소문자만 입력가능합니다.'
         },
@@ -192,7 +235,7 @@ export default {
         placeholder: '고객센터 전화번호',
         value: '',
         isValid: true,
-        iconClass: 'fas fa-phone',
+        icon: 'phone',
         spanText: {
           1: '고객센터 전화번호는 숫자와 하이픈만 입력가능합니다.'
         },
@@ -448,6 +491,10 @@ export default {
       display: flex;
       flex-direction: column;
       align-items: center;
+
+      .input {
+        margin: 10px 0;
+      }
 
       .signup-subdiv {
         width: 100%;

@@ -28,7 +28,7 @@ const router = createRouter({
       component: Account
     },
     {
-      path: '/seller/:sellerId',
+      path: '/seller/seller_my_page/:sellerId',
       name: 'Seller',
       component: Seller,
       props: true
