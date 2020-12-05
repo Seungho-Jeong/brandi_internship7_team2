@@ -2,6 +2,8 @@ import jwt
 import bcrypt
 from datetime import datetime, timedelta
 
+from itertools      import product
+
 from util.exception import NotExistsException, InvalidValueException
 from config         import SECRET, ALGORITHM
 
@@ -30,6 +32,12 @@ class ProductService:
         return product_info
 
     def get_product_seller(self, db, seller_name):
+        """
+        관리자가 상품을 등록할 경우...
+        :param db: 데이터베이스 연결 객체
+        :param seller_name: 셀러 국문이름(KO)
+        :return: 셀러 ID
+        """
         seller_id = self.product_dao.select_product_seller(db, seller_name)
 
         return seller_id
@@ -83,13 +91,33 @@ class ProductService:
         :return: 신규 등록 상품 ID
         """
 
-        new_product_id = self.product_dao.insert_product(db, product_info)
+        ## 1. 신규 상품 Insert 후 new_product_id 생성
+        new_product_id = self.product_dao.insert_product_information(db, product_info)
+
+        ## 2. 각 옵션 & Ordering Number Insert 후 option_id 생성
+        ordering = 1
+        for size in product_info['sizes']:
+            for color in product_info['colors']:
+                product_info['product_id']      = new_product_id
+                product_info['size_id']         = size
+                product_info['color_id']        = color
+                product_info['option_ordering'] = ordering
+
+                option_id = self.product_dao.insert_product_option(db, product_info)
+                ordering += 1
+
+        ## 3. 각 옵션에 대한 재고수량 Insert(미입력 시 Null)
+                for inventory in product_info['inventories']:
+                    product_info['option_id']    = option_id
+                    product_info['inventory_id'] = inventory
+                    self.product_dao.insert_product_inventory(db, product_info)
 
         return new_product_id
 
     def update_product_information(self, db, modify_data, is_master):
         """
         상품 정보를 수정하는 함수입니다
+        :param is_master: 관리자 계정 여부(Bool)
         :param modify_data: 수정 대상 상품에 대한 정보
         :param db: 데이터베이스 연결 객체
         """

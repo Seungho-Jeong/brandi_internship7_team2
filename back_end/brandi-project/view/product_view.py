@@ -145,6 +145,7 @@ def product_endpoints(product_service):
                 db = db_connection()
 
                 color_size_list = product_service.get_product_color_size(db)
+
                 return jsonify({'message' : 'success', 'product_detail': color_size_list}), 200
             except Exception as e:
                 return jsonify({'message' : 'error {}'.format(e)}), 500

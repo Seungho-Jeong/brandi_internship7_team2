@@ -157,7 +157,45 @@ class ProductDao:
 
             return cursor.fetchall()
 
-    def insert_product(self, db, product_info):
+    def insert_product_option(self, db, data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO options (
+                    color_id,
+                    size_id,
+                    product_id,
+                    seller_id,
+                    option_ordering
+                ) VALUES (
+                    %(color_id)s,
+                    %(size_id)s,
+                    %(product_id)s,
+                    %(seller_id)s,
+                    %(option_ordering)s
+                )
+            """, data)
+
+            return cursor.lastrowid
+
+    def insert_product_inventory(self, db, data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO inventory_settings(
+                    option_id,
+                    inventory,
+                    seller_id,
+                    product_id
+                ) VALUES (
+                    %(option_id)s,
+                    %(inventory_id)s,
+                    %(seller_id)s,
+                    %(product_id)s
+                )
+            """, data)
+
+            return cursor.lastrowid
+
+    def insert_product_information(self, db, product_info):
         """
         전달받은 상품 정보(Params)를 DB에 Insert하는 함수입니다.
         :param db: 데이터베이스 연결 객체
