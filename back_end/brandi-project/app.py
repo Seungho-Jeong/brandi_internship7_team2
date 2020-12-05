@@ -29,6 +29,7 @@ def create_app():
     app.json_encoder = CustomJsonEncoder
 
     upload_folder = './user_image'
+    upload_folder = './product_image'
     app.config['UPLOAD_FOLDER'] = upload_folder
     app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 

@@ -1,8 +1,8 @@
-from flask          import Blueprint, request, jsonify
+from flask           import Blueprint, request, jsonify, render_template
 
-from util.exception import NotExistsException, InvalidValueException, PermissionException
-from db_connection  import db_connection
-from util.decorator import login_decorator
+from util.exception  import NotExistsException, InvalidValueException, PermissionException
+from db_connection   import db_connection, s3_connection
+from util.decorator  import login_decorator
 
 def product_endpoints(product_service):
     product_app = Blueprint('product_app', __name__, url_prefix='/product')
@@ -114,8 +114,16 @@ def product_endpoints(product_service):
         db = None
         try:
             db = db_connection()
+            search_params = {'category_id': category_id}
 
-            sub_category_list = product_service.get_product_subcategory(db, category_id)
+            if request.is_master:
+                search_params['seller_id'] = request.json['seller_id']
+                print(search_params)
+            else:
+                search_params['seller_id'] = request.seller_id
+                print(search_params)
+
+            sub_category_list = product_service.get_product_subcategory(db, search_params)
 
             return jsonify({'message' : 'success', 'subcategory_list' : sub_category_list}), 200
         except KeyError as e:
@@ -128,7 +136,7 @@ def product_endpoints(product_service):
 
     @product_app.route('/registration', methods=['GET', 'POST'])
     @login_decorator
-    def registrate_new_product():
+    def registrate_new_product(*args):
         """
         신규 상품에 대한 정보가 JSON형식으로 주어지면 DB에 입력하는 함수입니다
         method가 GET인 경우 상품 등록을 위한 페이지에 연결하고,
@@ -162,6 +170,26 @@ def product_endpoints(product_service):
                 ## 관리자 계정인 경우 : 'get_search_user' 함수로 seller_id를 받아서(JSON) 사용
                 if not request.is_master:
                     product_info['seller_id'] = request.seller_id
+                    # product_info = {
+                    #     'product_category_id': args[0],
+                    #     'product_name': args[1],
+                    #     'price': args[2],
+                    #     'product_short_introduction': args[3],
+                    #     'product_detail_information': args[4],
+                    #     'discount_ratio': args[5],
+                    #     'min_sale_quantity': args[6],
+                    #     'max_sale_quantity': args[7],
+                    #     'registration_status_id': args[8],
+                    #     'sale_status_id': args[9],
+                    #     'display_status_id': args[10],
+                    #     'colors': args[11],
+                    #     'sizes': args[12],
+                    #     'inventories': args[13],
+                    #     'seller_id': request.seller_id
+                    # }
+
+                if product_info['sizes'] is None or product_info['colors'] is None:
+                    raise NotExistsException('not exists option data', 400)
 
                 new_product_id = product_service.create_new_product(db, product_info)
                 db.commit()
@@ -217,5 +245,37 @@ def product_endpoints(product_service):
         finally:
             if db:
                 db.close()
+
+    # @product_app.route('/upload_images', methods=['POST'])
+    # def upload_product_iamges():
+    #     db = None
+    #     try:
+    #         db = db_connection()
+    #         s3 = s3_connection()
+    #         images = request.files
+    #
+    #         product_image_upload = product_service.upload_product_images(db, s3, images)
+    #         product_info = request.form.to_dict(flat=False)
+    #         product_info['images'] = product_image_upload
+    #
+    #         db.commit()
+    #
+    #         return jsonify({'message' : 'success', 'product_id' : product_image_upload}), 200
+    #     except NotExistsException as e:
+    #         db.rollback()
+    #         return jsonify({'message' : e.message}), e.status_code
+    #     except InvalidValueException as e:
+    #         db.rollback()
+    #         return jsonify({'message': e.message}), e.status_code
+    #     except KeyError as e:
+    #         db.rollback()
+    #         return jsonify({'message' : 'key_error {}'.format(e)}), 400
+    #     except Exception as e:
+    #         db.rollback()
+    #         return jsonify({'message' : 'error {}'.format(e)}), 500
+    #     finally:
+    #         if db:
+    #             db.close()
+
 
     return product_app
