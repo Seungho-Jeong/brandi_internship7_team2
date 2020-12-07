@@ -61,43 +61,40 @@
             <tr
               class="data-row"
               v-for="seller in sellerData"
-              :key="seller.seller_id"
-              :id="seller.seller_id"
+              :key="seller.id"
+              :id="seller.id"
             >
               <td>
-                <input
-                  type="checkbox"
-                  name="sellerData"
-                  :id="seller.seller_id"
-                />
+                <input type="checkbox" name="sellerData" :id="seller.id" />
               </td>
-              <td>{{ seller.seller_id }}</td>
+              <td>{{ seller.id }}</td>
               <td>
                 <router-link
                   :to="{
                     name: 'Seller',
                     params: {
-                      sellerId: seller.seller_id
+                      sellerId: seller.id
                     }
                   }"
                   class="seller-link"
                   >{{ seller.account }}</router-link
                 >
               </td>
-              <td>{{ seller.seller_name_en }}</td>
-              <td>{{ seller.seller_name_ko }}</td>
+              <td>{{ seller.name_en }}</td>
+              <td>{{ seller.name_ko }}</td>
               <td>{{ seller.manager_name }}</td>
-              <td>{{ seller.shop_status }}</td>
+              <td>{{ seller.shop_status_name }}</td>
               <td>{{ seller.manager_mobile }}</td>
               <td>{{ seller.manager_email }}</td>
-              <td>{{ seller.seller_category_id }}</td>
+              <td>{{ seller.category_name }}</td>
               <td>{{ seller.created_at }}</td>
               <td>
                 <button
                   class="action"
                   :class="`type${action.key}`"
-                  v-for="action in shopStatusActionMap[seller.shop_status]"
+                  v-for="action in shopStatusActionMap[seller.shop_status_id]"
                   :key="action.key"
+                  @click="updateShopStatus(action.key)"
                 >
                   {{ action.label }}
                 </button>
@@ -125,6 +122,7 @@ import 'ant-design-vue/dist/antd.less';
 import PageHeading from '../../components/reusables/PageHeading.vue';
 import PageBar from '../../components/reusables/PageBar.vue';
 import PageSection from '../../components/reusables/PageSection.vue';
+import { SELLER_LIST } from '../../config.js';
 
 export default {
   name: 'Account',
@@ -214,26 +212,25 @@ export default {
         }
       ],
       test: ['1', '2'],
-      // sellerData: [],
       shopStatusActionMap: {
-        입점대기: [
+        1: [
           { key: 1, label: '입점 승인' },
           { key: 2, label: '입점 거절' }
         ],
-        입점: [
+        2: [
           { key: 3, label: '휴점 신청' },
           { key: 5, label: '퇴점 신청 처리' }
         ],
-        휴점: [
-          { key: 4, label: '휴점 해제' },
-          { key: 5, label: '퇴점 신청 처리' }
-        ],
-        퇴점대기: [
+        3: [],
+        4: [
           { key: 3, label: '휴점 신청' },
           { key: 6, label: '퇴점 확정 처리' },
           { key: 7, label: '퇴점 철회 처리' }
         ],
-        퇴점: []
+        5: [
+          { key: 4, label: '휴점 해제' },
+          { key: 5, label: '퇴점 신청 처리' }
+        ]
       }
     };
   },
@@ -253,6 +250,77 @@ export default {
     showFilterDropdown(columnKey) {
       const filterDropdownKeyList = ['shop_status', 'seller_type'];
       return filterDropdownKeyList.includes(columnKey);
+    },
+    async updateShopStatus(actionKey) {
+      let newShopStatusId;
+      let newShopStatusName;
+      switch (actionKey) {
+        case 1:
+          newShopStatusId = 2;
+          newShopStatusName = '입점';
+          break;
+        case 2:
+          newShopStatusId = 3;
+          newShopStatusName = '퇴점';
+          break;
+        case 3:
+          newShopStatusId = 5;
+          newShopStatusName = '휴점';
+          break;
+        case 4:
+          newShopStatusId = 2;
+          newShopStatusName = '입점';
+          break;
+        case 5:
+          newShopStatusId = 4;
+          newShopStatusName = '퇴점대기';
+          break;
+        case 6:
+          newShopStatusId = 3;
+          newShopStatusName = '퇴점';
+          break;
+        case 7:
+          newShopStatusId = 2;
+          newShopStatusName = '입점';
+          break;
+        default:
+          console.log('shop status update error');
+          break;
+      }
+      // const action = confirm(
+      //   `셀러상태를 ${newShopStatusName}(으)로 변경하시겠습니까?`
+      // );
+      // if (action) {
+      //   alert(`셀러상태가 ${newShopStatusName}(으)로 변경되었습니다.`);
+      // }
+      try {
+        const res = await fetch(SELLER_LIST, {
+          method: 'PUT',
+          headers: {
+            Authorization:
+              'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50IjoibWFzdGVyMyIsImV4cCI6MTYwNzQwNTAzNH0.JiooF5kfRHafQdx2jtsw4AT7c0oujD0guyCXdLPmAxA',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            shop_status_id: newShopStatusId,
+            shop_status_name: newShopStatusName
+          })
+        });
+        const data = await res.json();
+        if (data.message === 'success') {
+          const action = confirm(
+            `셀러상태를 ${newShopStatusName}(으)로 변경하시겠습니까?`
+          );
+          if (action) {
+            alert(`셀러상태가 ${newShopStatusName}(으)로 변경되었습니다.`);
+          }
+        } else {
+          alert('server message: FAIL');
+        }
+      } catch (err) {
+        console.log(this.sellerData.shop_status_id);
+        alert('PUT error: put request to server failed');
+      }
     }
   }
 };

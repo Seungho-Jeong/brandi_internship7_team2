@@ -9,15 +9,21 @@
 
 <script>
 import Navbar from './components/Navbar.vue';
-import { sellers } from '../public/data/SELLERS_API.js';
+// import { seller_list } from '../public/data/SELLERS_API.js';
+import { SELLER_LIST } from './config.js';
 
 export default {
+  provide() {
+    return {
+      sellerData: this.sellerData
+    };
+  },
   components: {
     Navbar
   },
   data() {
     return {
-      sellerData: sellers
+      sellerData: []
     };
   },
   computed: {
@@ -26,28 +32,31 @@ export default {
       return !excludeNavPathsList.includes(this.$route.path);
     }
   },
-  // created() {
-  //   const fetchSellerData = async () => {
-  //     const SELLERS_API = './config.js';
-  //     try {
-  //       const res = await fetch(SELLERS_API);
-  //       const data = await res;
-  //       if (data) {
-  //         alert(data.sellers);
-  //         this.sellerData = data.sellers;
-  //       } else {
-  //         alert('server message: FAIL');
-  //       }
-  //     } catch (err) {
-  //       alert('fetch error');
-  //     }
-  //   };
-  //   fetchSellerData();
-  // },
-  provide() {
-    return {
-      sellerData: this.sellerData
-    };
+  methods: {
+    async fetchSellerData() {
+      try {
+        const res = await fetch(SELLER_LIST, {
+          method: 'GET',
+          headers: {
+            Authorization:
+              'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50IjoibWFzdGVyMyIsImV4cCI6MTYwNzQwNTAzNH0.JiooF5kfRHafQdx2jtsw4AT7c0oujD0guyCXdLPmAxA'
+          }
+        });
+        const data = await res.json();
+        if (data.message === 'success') {
+          alert(data.seller_list);
+          this.sellerData = data.seller_list;
+          console.log(data.seller_list);
+        } else {
+          alert('server message: FAIL');
+        }
+      } catch (err) {
+        alert('get error: get request to server failed');
+      }
+    }
+  },
+  created() {
+    this.fetchSellerData();
   }
 };
 </script>

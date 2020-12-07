@@ -400,6 +400,7 @@ export default {
         try {
           const res = await fetch(SIGNUP_API, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               seller_category_id: this.sellerCategories.selectedSellerCateory,
               account: this.account.value,
@@ -420,17 +421,9 @@ export default {
               this.$router.push('/');
             }
           } else {
-            console.log(this.sellerCategories.selectedSellerCategory);
             alert('server message: FAIL');
           }
         } catch (err) {
-          console.log(this.sellerCategories.selectedSellerCategory);
-          console.log(this.account.value);
-          console.log(this.password.value);
-          console.log(this.sellerNameKo.value);
-          console.log(this.sellerNameEng.value);
-          console.log(this.csContact.value);
-          console.log(false);
           alert('POST error: post request to server failed');
         }
       } else {

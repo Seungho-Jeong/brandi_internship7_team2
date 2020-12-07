@@ -524,18 +524,16 @@ export default {
   methods: {
     loadSeller(sellerId) {
       const { sellerData } = this;
-      const selectedSeller = sellerData.find(
-        (seller) => seller.seller_id == sellerId
-      );
-      this.seller_id = selectedSeller.seller_id;
+      const selectedSeller = sellerData.find((seller) => seller.id == sellerId);
+      this.seller_id = selectedSeller.id;
       this.account = selectedSeller.account;
-      this.seller_name_en = selectedSeller.seller_name_en;
-      this.seller_name_ko = selectedSeller.seller_name_ko;
+      this.seller_name_en = selectedSeller.name_en;
+      this.seller_name_ko = selectedSeller.name_ko;
       this.manager_name = selectedSeller.manager_name;
-      this.shop_status = selectedSeller.shop_status;
+      this.shop_status = selectedSeller.shop_status_name;
       this.manager_mobile = selectedSeller.manager_mobile;
       this.manager_email = selectedSeller.manager_email;
-      this.seller_category_id = selectedSeller.seller_category_id;
+      this.seller_category_id = selectedSeller.category;
       this.created_at = selectedSeller.created_at;
     },
     // 이미지 업로드 methods
