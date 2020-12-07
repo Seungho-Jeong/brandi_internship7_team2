@@ -1,13 +1,13 @@
-## 내장 PKGs
+# 내장 PKGs
 from datetime   import datetime
 from decimal    import Decimal
 
-## Flask PKGs
+# Flask PKGs
 from flask      import Flask
 from flask.json import JSONEncoder
 from flask_cors import CORS
 
-## Custom modules
+# Custom modules
 from model      import UserDao, ProductDao
 from service    import UserService, ProductService
 from view       import user_endpoints, product_endpoints
@@ -24,8 +24,14 @@ class CustomJsonEncoder(JSONEncoder):
 
 def create_app():
     app = Flask(__name__)
+    
     CORS(app, resources={r'*': {'origins': '*'}})
     app.json_encoder = CustomJsonEncoder
+
+    upload_folder = './user_image'
+    upload_folder = './product_image'
+    app.config['UPLOAD_FOLDER'] = upload_folder
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
     # dao
     user_dao = UserDao()

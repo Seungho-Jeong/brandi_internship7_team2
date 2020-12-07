@@ -1,12 +1,30 @@
+import json
+
 from flask import Blueprint, request, jsonify
 
-from util.exception import ExistsException, NotExistsException, InvalidValueException
-from db_connection  import db_connection
-from util.decorator import login_decorator
+from util.exception import (
+    ALLOWED_EXTENSIONS,
+    ExistsException,
+    NotExistsException,
+    InvalidValueException,
+    PermissionException,
+    PathParameterException,
+    FileException,
+    RequestException
+)
+from util.validation import KeywordValidation
+from db_connection   import db_connection, s3_connection
+from util.decorator  import login_decorator
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 def user_endpoints(user_service):
     user_app = Blueprint('user_app', __name__, url_prefix='/user')
+    keyword_validation = KeywordValidation()
+
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     @user_app.route('/signup', methods=['POST'])
     def sign_up():
@@ -16,13 +34,20 @@ def user_endpoints(user_service):
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
+            print(data)
+
+            if not data:
+                raise RequestException
 
             user_service.sign_up(db, data)
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except ExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -40,24 +65,36 @@ def user_endpoints(user_service):
     def sign_in():
         """
         유저 로그인
+        account, password
         :return: access_token
         """
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
+
+            if not data:
+                raise RequestException
+
+            keyword_validation.signin(data)
 
             access_token = user_service.sign_in(db, data)
             db.commit()
 
             return jsonify({'message' : 'success', 'access_token' : access_token}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
+        except PermissionException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except NotExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return jsonify({'message': 'key_error {}'.format(e)}), 400
+            return jsonify({'message': format(e)}), 400
         except Exception as e:
             db.rollback()
             return jsonify({'message' : 'error {}'.format(e)}), 500
@@ -101,7 +138,7 @@ def user_endpoints(user_service):
             db = db_connection()
 
             if not request.is_master:
-                return jsonify({'message' : 'permission denied'}), 403
+                raise PermissionException
 
             filter_list = ['id', 'account', 'name_en', 'name_ko',
                            'manager_name', 'manager_mobile', 'manager_email',
@@ -116,12 +153,21 @@ def user_endpoints(user_service):
 
             if ('start_date' in filters) and ('end_date' in filters):
                 if filters['end_date'] < filters['start_date']:
-                    raise InvalidValueException('end_date should not earlier than start_date', 400)
+                    raise InvalidValueException("'end_date' should not earlier than 'start_date'", 400)
+
+            if ('offset' in filters) and (int(filters['offset']) <= 0):
+                raise InvalidValueException("only request an integer of 1 or more for 'offset'", 400)
+
+            if ('limit' in filters) and (int(filters['limit']) <= 0):
+                raise InvalidValueException("only request an integer of 1 or more for 'limit'", 400)
 
             sellers = user_service.get_seller_list(db, filters)
 
             return jsonify({'message' : 'success', 'total_count' : sellers['count'],
                             'seller_list' : sellers['seller_list']}), 200
+
+        except PermissionException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except InvalidValueException as e:
             return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
@@ -148,19 +194,23 @@ def user_endpoints(user_service):
             # 마스터
             if request.is_master:
                 if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
+                    raise PathParameterException('seller_id')
 
                 seller_id = seller_id['seller_id']
             # 셀러
             else:
                 if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
+                    raise PermissionException
 
                 seller_id = request.seller_id
 
             seller_info = user_service.get_seller_information(db, seller_id)
 
             return jsonify({'message' : 'success', 'seller_info': seller_info}), 200
+        except PathParameterException as e:
+            return jsonify({'message' : e.message}), e.status_code
+        except PermissionException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except NotExistsException as e:
             return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
@@ -182,29 +232,64 @@ def user_endpoints(user_service):
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            s3 = s3_connection()
+            form_data = dict(request.form)
+
+            if not form_data:
+                raise RequestException
+
+            data = json.loads(form_data['body'])
+
+            if request.files:
+                profile_image = request.files['profile_image'] if 'profile_image' in request.files else None
+                if profile_image and not allowed_file(profile_image.filename):
+                    raise FileException('the extension of that file is not available', 400)
+                data['profile_image'] = profile_image if profile_image.filename else None
+
+                background_image = request.files['background_image'] if 'background_image' in request.files else None
+                if background_image and not allowed_file(background_image.filename):
+                    raise FileException('the extension of that file is not available', 400)
+                data['background_image'] = background_image if background_image.filename else None
 
             # 마스터
             if request.is_master:
                 if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
+                    raise PathParameterException('seller_id')
 
                 seller_id = seller_id['seller_id']
                 modifier_id = request.seller_id
             # 셀러
             else:
                 if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
+                    raise PermissionException
 
                 seller_id = request.seller_id
                 modifier_id = request.seller_id
 
-            user_service.update_seller_information(db, data, seller_id, modifier_id)
+            user_service.update_seller_information(db, data, s3, seller_id, modifier_id)
 
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
+        except RequestEntityTooLarge:
+            db.rollback()
+            return jsonify({'message': 'image files cannot exceed 5MB'}), 400
+        except FileException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
+        except PathParameterException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
+        except InvalidValueException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
+        except PermissionException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
             return jsonify({'message' : 'key_error {}'.format(e)}), 400
@@ -226,17 +311,26 @@ def user_endpoints(user_service):
 
         db = None
         try:
-            data = request.json
             db = db_connection()
+            data = request.json
+
+            if not data:
+                raise RequestException
 
             if not request.is_master:
-                return jsonify({'message' : 'permission denied'}), 403
+                raise PermissionException
 
             user_service.update_shop_status(db, data, seller_id)
 
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
+        except PermissionException as e:
+            db.rollback()
+            return jsonify({'message' : e.message}), e.status_code
         except NotExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -269,28 +363,22 @@ def user_endpoints(user_service):
 
             if request.is_master:
                 if not seller_id:
-                    return jsonify({'message' : 'require parameter'}), 400
+                    raise PathParameterException('seller_id')
 
                 seller_id = seller_id['seller_id']
             else:
                 if seller_id:
-                    return jsonify({'message': 'permission denied'}), 403
+                    raise PermissionException
 
                 seller_id = request.seller_id
 
             log_list = user_service.get_seller_status_log(db, seller_id)
 
             return jsonify({'message' : 'success', 'log_list' : log_list}), 200
-        except Exception as e:
-            return jsonify({'message' : 'error {}'.format(e)}), 500
-        finally:
-            if db:
-                db.close()
-
-    def upload_files():
-        db = None
-        try:
-            db = db_connection()
+        except PathParameterException as e:
+            return jsonify({'message' : e.message}), e.status_code
+        except PermissionException as e:
+            return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
             return jsonify({'message' : 'error {}'.format(e)}), 500
         finally:

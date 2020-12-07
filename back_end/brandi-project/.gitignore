@@ -2,9 +2,29 @@ config.py
 *.idea
 venv/
 .idea/
+.idea/*
+.DS_Store
+user_image
+user_image/
+user_image.*
 
 # temporary files
 *.log
 *.pot
 *.pyc
-__pycache__/
+*/*/*/__pycache__/
+*/*/__pycache__/
+*/__pycache__/
+*.__pycache__/
+.service/__pycache__/
+.view/__pycache__/
+.model/__pycache__/
+
+### vscode ###
+.vscode/*
+*.vscode
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
