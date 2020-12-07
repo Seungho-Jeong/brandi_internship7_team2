@@ -469,6 +469,7 @@ export default {
         value: '',
         isValid: true
       },
+      //담당자 정보
       manager1: {
         name: {
           value: '',
@@ -513,6 +514,7 @@ export default {
           isValid: true
         }
       },
+      //고객센터
       cs_contact: {
         value: '',
         isValid: true
@@ -536,9 +538,10 @@ export default {
       this.seller_category_id = selectedSeller.seller_category_id;
       this.created_at = selectedSeller.created_at;
     },
-    // 이미지 업로드 ant design 컴포넌트 methods
+    // 이미지 업로드 methods
     handleChangeProfile(info) {
-      console.log(info);
+      console.log(this.$refs.aUploadProfile.sFileList);
+      console.log(this.profileImgList);
       if (info.file.status === 'uploading') {
         this.profileLoading = true;
         return;
@@ -569,6 +572,7 @@ export default {
       }
     },
     beforeUploadProfile(file) {
+      console.log(this.$refs.aUploadProfile.sFileList);
       const isJpgOrPng =
         file.type === 'image/jpeg' ||
         file.type === 'image/jpg' ||
@@ -583,7 +587,6 @@ export default {
       this.profileImgList.unshift(file);
     },
     beforeUploadBackground(file) {
-      console.log(file);
       const isJpgOrPng =
         file.type === 'image/jpeg' ||
         file.type === 'image/jpg' ||
@@ -600,15 +603,16 @@ export default {
     changeImage(imageCategory) {
       switch (imageCategory) {
         case 'profile':
-          // console.log(
           this.profileImgList = [];
+          this.$refs.aUploadProfile.$el.children[0].children[0].children[0].value =
+            '';
           this.$refs.aUploadProfile.$el.children[0].children[0].children[0].click();
-          // );
-          // this.$refs.aUploadProfile.click();
           break;
         case 'background':
-          console.log(this.$refs.aUploadBackground);
-          // this.$refs.aUploadBackground.click();
+          this.backgroundImgList = [];
+          this.$refs.aUploadBackground.$el.children[0].children[0].children[0].value =
+            '';
+          this.$refs.aUploadBackground.$el.children[0].children[0].children[0].click();
           break;
         default:
           console.log('error');
@@ -632,6 +636,7 @@ export default {
           break;
       }
     },
+    //
     setShortIntroduction() {
       console.log(this.shortIntroduction.value);
     },
