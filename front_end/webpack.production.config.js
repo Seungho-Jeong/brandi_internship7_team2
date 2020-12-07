@@ -5,7 +5,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'production',
-  entry: './src/index.js',
+  entry: [
+    'core-js/modules/es.promise',
+    'core-js/modules/es.array.iterator',
+    './src/index.js'
+  ],
   output: {
     filename: 'main.[contenthash].js',
     path: path.resolve(__dirname, 'dist')

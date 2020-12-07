@@ -42,7 +42,7 @@
     </div>
 
     <div class="content" :class="{ wide: isSidebarNarrow }">
-      <router-view />
+      <slot></slot>
     </div>
   </div>
 </template>

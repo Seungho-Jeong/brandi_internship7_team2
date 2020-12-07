@@ -406,11 +406,18 @@
     </div>
   </div>
 </template>
+
 <script>
 import PageHeading from '../../components/reusables/PageHeading.vue';
 import PageBar from '../../components/reusables/PageBar.vue';
 import PageSection from '../../components/reusables/PageSection.vue';
 import InputWithSpan from '../../components/reusables/InputWithSpan.vue';
+
+// const PageHeading = () => import('../../components/reusables/PageHeading.vue');
+// const PageBar = () => import('../../components/reusables/PageBar.vue');
+// const PageSection = () => import('../../components/reusables/PageSection.vue');
+// const InputWithSpan = () =>
+//   import('../../components/reusables/InputWithSpan.vue');
 
 import { Upload } from 'ant-design-vue';
 import {
@@ -435,6 +442,7 @@ export default {
     PlusOutlined,
     LoadingOutlined,
     MinusOutlined,
+    // SellerMyPage,
     PageHeading,
     PageBar,
     PageSection,
@@ -524,7 +532,10 @@ export default {
   methods: {
     loadSeller(sellerId) {
       const { sellerData } = this;
-      const selectedSeller = sellerData.find((seller) => seller.id == sellerId);
+      console.log(sellerData.sellerList[0]);
+      const selectedSeller = sellerData.sellerList.find(
+        (seller) => seller.id == sellerId
+      );
       this.seller_id = selectedSeller.id;
       this.account = selectedSeller.account;
       this.seller_name_en = selectedSeller.name_en;

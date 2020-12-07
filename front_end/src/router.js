@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 
 import Login from './pages/Login.vue';
 import Signup from './pages/Signup.vue';
@@ -9,7 +9,7 @@ import ProductRegist from './components/manageproducts/ProductRegistPage.vue';
 import Order from './pages/manageorders/Order.vue';
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',
@@ -29,7 +29,6 @@ const router = createRouter({
     },
     {
       path: '/seller/seller_my_page/:sellerId',
-      name: 'Seller',
       component: Seller,
       props: true
     },

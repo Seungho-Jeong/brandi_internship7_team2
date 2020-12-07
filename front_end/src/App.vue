@@ -1,9 +1,9 @@
 <template>
   <main>
-    <Navbar v-if="isNavShown" />
-    <div v-if="!isNavShown" class="content">
+    <router-view v-if="!isNavShown"></router-view>
+    <Navbar v-if="isNavShown">
       <router-view></router-view>
-    </div>
+    </Navbar>
   </main>
 </template>
 
@@ -23,7 +23,9 @@ export default {
   },
   data() {
     return {
-      sellerData: []
+      sellerData: {
+        sellerList: []
+      }
     };
   },
   computed: {
@@ -44,7 +46,6 @@ export default {
         });
         const data = await res.json();
         if (data.message === 'success') {
-          alert(data.seller_list);
           this.sellerData = data.seller_list;
           console.log(data.seller_list);
         } else {
@@ -55,8 +56,11 @@ export default {
       }
     }
   },
-  created() {
+  mounted() {
     this.fetchSellerData();
+  },
+  beforeUpdate() {
+    console.log(this.sellerData.sellerList);
   }
 };
 </script>
