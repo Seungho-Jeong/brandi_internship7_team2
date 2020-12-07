@@ -1,7 +1,7 @@
 import jwt
 import bcrypt
 from datetime import datetime, timedelta
-from PIL import  Image
+from PIL      import Image
 
 from flask          import current_app
 
@@ -31,9 +31,12 @@ class UserService:
         seller_id = self.user_dao.sign_up(db, data)
 
         self.user_dao.create_seller_information(db, seller_id)
-        
+
         # 로그 테이블 생성
         user_info = self.user_dao.get_seller_information(db, seller_id)
+        user_info['manager_name'] = None
+        user_info['manager_mobile'] = None
+        user_info['manager_email'] = None
         self.user_dao.create_seller_logs(db, user_info)
 
     def sign_in(self, db, data):

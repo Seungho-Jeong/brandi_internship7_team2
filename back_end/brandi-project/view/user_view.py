@@ -1,5 +1,4 @@
 import json
-from PIL import Image
 
 from flask import Blueprint, request, jsonify
 
