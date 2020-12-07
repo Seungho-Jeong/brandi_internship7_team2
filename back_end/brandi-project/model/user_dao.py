@@ -169,6 +169,8 @@ class UserDao:
                     m.manager_mobile,
                     m.manager_email,
                     category.name AS category,
+                    shop.id AS shop_status_id,
+                    shop.name AS shop_status_name,
                     info.created_at
                 FROM
                     sellers_informations AS info
