@@ -12,7 +12,7 @@
       <a-pagination
         class="pagination top"
         size="small"
-        :total="sellerData.length"
+        :total="sellerData.sellerList.length"
         :show-total="(total) => `Total ${total} items`"
         :page-size-options="['10', '20', '50', '100', '150']"
         show-size-changer
@@ -60,7 +60,7 @@
           <tbody>
             <tr
               class="data-row"
-              v-for="seller in sellerData"
+              v-for="seller in sellerData.sellerList"
               :key="seller.id"
               :id="seller.id"
             >
@@ -70,12 +70,7 @@
               <td>{{ seller.id }}</td>
               <td>
                 <router-link
-                  :to="{
-                    name: 'Seller',
-                    params: {
-                      sellerId: seller.id
-                    }
-                  }"
+                  :to="`/seller/seller_my_page/${seller.id}`"
                   class="seller-link"
                   >{{ seller.account }}</router-link
                 >
@@ -94,7 +89,7 @@
                   :class="`type${action.key}`"
                   v-for="action in shopStatusActionMap[seller.shop_status_id]"
                   :key="action.key"
-                  @click="updateShopStatus(action.key)"
+                  @click="updateShopStatus(seller.id, action.key)"
                 >
                   {{ action.label }}
                 </button>
@@ -106,7 +101,7 @@
       <a-pagination
         class="pagination bottom"
         size="small"
-        :total="sellerData.length"
+        :total="sellerData.sellerList.length"
         :show-total="(total) => `Total ${total} items`"
         :page-size-options="['10', '20', '50', '100', '150']"
         show-size-changer
@@ -124,6 +119,13 @@ import PageBar from '../../components/reusables/PageBar.vue';
 import PageSection from '../../components/reusables/PageSection.vue';
 import { SELLER_LIST } from '../../config.js';
 
+// const PageHeading = async () => {
+//   await import('../../components/reusables/PageHeading.vue');
+// };
+// const PageBar = () => import('../../components/reusables/PageBar.vue');
+// const PageSection = () => import('../../components/reusables/PageSection.vue');
+// const { SELLER_LIST } = () => import('../../config.js');
+
 export default {
   name: 'Account',
   inject: ['sellerData'],
@@ -132,6 +134,9 @@ export default {
     PageHeading,
     PageBar,
     PageSection
+  },
+  beforeUpdate() {
+    console.log(this.sellerData.sellerList);
   },
   data() {
     return {
@@ -251,7 +256,7 @@ export default {
       const filterDropdownKeyList = ['shop_status', 'seller_type'];
       return filterDropdownKeyList.includes(columnKey);
     },
-    async updateShopStatus(actionKey) {
+    async updateShopStatus(sellerId, actionKey) {
       let newShopStatusId;
       let newShopStatusName;
       switch (actionKey) {
@@ -294,8 +299,9 @@ export default {
       //   alert(`셀러상태가 ${newShopStatusName}(으)로 변경되었습니다.`);
       // }
       try {
-        const res = await fetch(SELLER_LIST, {
-          method: 'PUT',
+        const QueryString = `?id=${sellerId.toString()}`;
+        const res = await fetch(SELLER_LIST + QueryString, {
+          method: 'PATCH',
           headers: {
             Authorization:
               'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50IjoibWFzdGVyMyIsImV4cCI6MTYwNzQwNTAzNH0.JiooF5kfRHafQdx2jtsw4AT7c0oujD0guyCXdLPmAxA',
@@ -318,7 +324,6 @@ export default {
           alert('server message: FAIL');
         }
       } catch (err) {
-        console.log(this.sellerData.shop_status_id);
         alert('PUT error: put request to server failed');
       }
     }
@@ -388,6 +393,7 @@ table {
     }
     .seller-link {
       color: #0d628f;
+      cursor: pointer;
       &:hover {
         text-decoration: underline;
       }

@@ -7,7 +7,11 @@ const { HotModuleReplacementPlugin } = require('webpack');
 module.exports = {
   target: 'web',
   mode: 'development',
-  entry: './src/index.js',
+  entry: [
+    'core-js/modules/es.promise',
+    'core-js/modules/es.array.iterator',
+    './src/index.js'
+  ],
   output: {
     filename: 'main.js',
     path: path.resolve(__dirname, 'dist')
@@ -74,7 +78,15 @@ module.exports = {
   devServer: {
     port: 9000,
     contentBase: path.resolve(__dirname, 'dist'),
-    historyApiFallback: true,
+    compress: true,
+    // historyApiFallback: {
+    //   rewrites: [
+    //     {
+    //       from: /^\/seller\/.*$/,
+    //       to: '/seller'
+    //     }
+    //   ]
+    // },
     stats: 'minimal',
     inline: true,
     open: true,
