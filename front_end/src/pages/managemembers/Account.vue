@@ -86,7 +86,7 @@
               <td>{{ seller.shop_status_name }}</td>
               <td>{{ seller.manager_mobile }}</td>
               <td>{{ seller.manager_email }}</td>
-              <td>{{ seller.category_name }}</td>
+              <td>{{ seller.category }}</td>
               <td>{{ seller.created_at }}</td>
               <td>
                 <button
