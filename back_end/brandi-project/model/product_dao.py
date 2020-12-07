@@ -9,6 +9,7 @@ class ProductDao:
                 WHERE
                     id = %(product_id)s
                     AND seller_id = %(seller_id)s
+                    AND is_delete = 0
             """, inspection_data)
 
             return cursor.fetchone()
@@ -23,52 +24,64 @@ class ProductDao:
 
         with db.cursor() as cursor:
             cursor.execute("""
-            SELECT
-                p.id,
-                p.product_name,
-                p.price,
-                p.short_introduction,
-                p.product_detail_information,
-                p.discount_ratio,
-                p.min_sale_quantity,
-                p.max_sale_quantity,
-                p.seller_id,
-                p.created_at,
-                p.is_delete,
-                p.registration_status_id,
-                p.sale_status_id,
-                p.display_status_id,
-                p.modifier_id,
-                p.product_subcategory_id,
-                i.product_image
-            FROM
-                products AS p
-                LEFT JOIN
-                    sellers
-                    ON p.seller_id = sellers.id
-                LEFT JOIN
-                    registration_status_type AS registration
-                    ON p.registration_status_id = registration.id
-                LEFT JOIN
-                    sale_status_type AS sale
-                    ON p.sale_status_id = sale.id
-                LEFT JOIN
-                    display_status_type AS display
-                    ON p.display_status_id = display.id
-                LEFT JOIN
-                    sellers AS seller
-                    ON p.modifier_id = seller.id
-                LEFT JOIN
-                    product_subcategories_type AS subcat
-                    ON p.product_subcategory_id = subcat.id
-                LEFT JOIN
-                    product_images AS i
-                    ON p.id = i.product_id
-            WHERE
-                p.id = %(product_id)s
-        """, search_params)
+                SELECT
+                    p.id,
+                    p.product_name,
+                    p.price,
+                    p.short_introduction,
+                    p.product_detail_information,
+                    p.discount_ratio,
+                    p.min_sale_quantity,
+                    p.max_sale_quantity,
+                    p.seller_id,
+                    p.created_at,
+                    p.is_delete,
+                    p.registration_status_id,
+                    p.sale_status_id,
+                    p.display_status_id,
+                    p.modifier_id,
+                    p.product_subcategory_id
+                FROM
+                    products AS p
+                    LEFT JOIN
+                        sellers
+                        ON p.seller_id = sellers.id
+                    LEFT JOIN
+                        registration_status_type AS registration
+                        ON p.registration_status_id = registration.id
+                    LEFT JOIN
+                        sale_status_type AS sale
+                        ON p.sale_status_id = sale.id
+                    LEFT JOIN
+                        display_status_type AS display
+                        ON p.display_status_id = display.id
+                    LEFT JOIN
+                        sellers AS seller
+                        ON p.modifier_id = seller.id
+                    LEFT JOIN
+                        product_subcategories_type AS subcat
+                        ON p.product_subcategory_id = subcat.id
+                WHERE
+                    p.id = %(product_id)s
+                    AND p.is_delete = 0
+            """, search_params)
 
-        return cursor.fetchone()
+            return cursor.fetchone()
+
+    def select_product_image(self, db, search_params):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    product_image
+                FROM
+                    product_images
+                WHERE
+                    product_id = %(product_id)s
+                    AND is_delete = 0
+            """, search_params)
+
+            return cursor.fetchall()
 
     def select_product_seller(self, db, seller_name):
         with db.cursor() as cursor:
@@ -171,6 +184,18 @@ class ProductDao:
 
             return cursor.fetchall()
 
+    def select_product_country(self, db):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    country_name
+                FROM
+                    countries_type
+            """)
+
+            return cursor.fetchall()
+
     def insert_product_option(self, db, product_info):
         with db.cursor() as cursor:
             cursor.execute("""
@@ -227,17 +252,37 @@ class ProductDao:
 
             return cursor.lastrowid
 
+    def insert_product_manufacturing_information(self, db, product_info):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO manufacturings(
+                    seller_id,
+                    product_id,
+                    manufacturing_country_id,
+                    manufacturing_date,
+                    manufacturing_company
+                ) VALUES (
+                    %(seller_id)s,
+                    %(product_id)s,
+                    %(manufacturing_country_id)s,
+                    %(manufacturing_date)s,
+                    %(manufacturing_company)s
+                )
+            """, product_info)
+
     def insert_product_image(self, db, product_info):
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO product_images (
+                    seller_id,
                     product_id,
                     product_image,
-                    seller_id
+                    image_ordering
                 ) VALUES (
+                    %(seller_id)s,
                     %(product_id)s,
                     %(image_url)s,
-                    %(seller_id)s
+                    %(image_ordering)s
                 )
             """, product_info)
 
