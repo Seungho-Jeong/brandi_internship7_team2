@@ -3,6 +3,7 @@ config.py
 venv/
 .idea/
 .idea/*
+.DS_Store
 user_image
 user_image/
 user_image.*
