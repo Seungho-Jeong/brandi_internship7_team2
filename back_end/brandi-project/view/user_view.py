@@ -36,6 +36,7 @@ def user_endpoints(user_service):
         try:
             db = db_connection()
             data = request.json
+            print(data)
 
             if not data:
                 raise RequestException
