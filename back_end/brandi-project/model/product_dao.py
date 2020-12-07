@@ -227,6 +227,20 @@ class ProductDao:
 
             return cursor.lastrowid
 
+    def insert_product_image(self, db, product_info):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO product_images (
+                    product_id,
+                    product_image,
+                    seller_id
+                ) VALUES (
+                    %(product_id)s,
+                    %(image_url)s,
+                    %(seller_id)s
+                )
+            """, product_info)
+
     def insert_product_information(self, db, product_info):
         """
         전달받은 상품 정보(Params)를 DB에 Insert하는 함수입니다.

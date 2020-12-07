@@ -1,11 +1,25 @@
-from flask           import Blueprint, request, jsonify, render_template
+import json
 
-from util.exception  import NotExistsException, InvalidValueException, PermissionException
-from db_connection   import db_connection, s3_connection
-from util.decorator  import login_decorator
+from flask          import Blueprint, request, jsonify
+from datetime       import date
+
+from util.exception import (
+    ALLOWED_EXTENSIONS,
+    FileException,
+    InvalidValueException,
+    NotExistsException,
+    PermissionException
+)
+
+from db_connection  import db_connection, s3_connection
+from util.decorator import login_decorator
 
 def product_endpoints(product_service):
     product_app = Blueprint('product_app', __name__, url_prefix='/product')
+
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     @product_app.route('/<int:product_id>', methods=['GET'])
     @login_decorator
@@ -136,7 +150,7 @@ def product_endpoints(product_service):
 
     @product_app.route('/registration', methods=['GET', 'POST'])
     @login_decorator
-    def registrate_new_product(*args):
+    def registrate_new_product():
         """
         신규 상품에 대한 정보가 JSON형식으로 주어지면 DB에 입력하는 함수입니다
         method가 GET인 경우 상품 등록을 위한 페이지에 연결하고,
@@ -163,36 +177,88 @@ def product_endpoints(product_service):
         else:
             db = None
             try:
-                db           = db_connection()
-                product_info = request.json
+                db = db_connection()
+                s3 = s3_connection()
+                form_data = dict(request.form)
+                product_info = json.loads(form_data['body'])
+                # product_info = request.json
+
+                print(product_info)
+
+                seller_id = request.seller_id
+                is_master = request.is_master
 
                 ## 일반 계정인 경우 : 셀러 ID = 로그인 토큰의 셀러 ID
-                ## 관리자 계정인 경우 : 'get_search_user' 함수로 seller_id를 받아서(JSON) 사용
-                if not request.is_master:
-                    product_info['seller_id'] = request.seller_id
-                    # product_info = {
-                    #     'product_category_id': args[0],
-                    #     'product_name': args[1],
-                    #     'price': args[2],
-                    #     'product_short_introduction': args[3],
-                    #     'product_detail_information': args[4],
-                    #     'discount_ratio': args[5],
-                    #     'min_sale_quantity': args[6],
-                    #     'max_sale_quantity': args[7],
-                    #     'registration_status_id': args[8],
-                    #     'sale_status_id': args[9],
-                    #     'display_status_id': args[10],
-                    #     'colors': args[11],
-                    #     'sizes': args[12],
-                    #     'inventories': args[13],
-                    #     'seller_id': request.seller_id
-                    # }
+                if not is_master:
+                    product_info['seller_id'] = seller_id
 
+                ## 옵션 정보가 없는 경우
                 if product_info['sizes'] is None or product_info['colors'] is None:
                     raise NotExistsException('not exists option data', 400)
 
+                ## 상품명이 100자를 초과하는 경우
+                if len(product_info['product_name']) > 100:
+                    raise InvalidValueException('product name too long', 400)
+
+                ## 옵션의 수(sizes by colors)와 재고가 일치하지 않는 경우
+                if len(product_info['sizes']) * len(product_info['colors']) != len(product_info['inventories']):
+                    raise InvalidValueException('not match options and inventories', 400)
+
+                ## 최소 발주수량이 20개 이상인 경우
+                if product_info['min_sale_quantity']:
+                    if product_info['min_sale_quantity'] > 20:
+                        raise InvalidValueException(
+                            'minimum quantity({}) exceed 20'.format(product_info['min_sale_quantity']), 400)
+
+                ## 최대 발주수량이 20개 이상인 경우
+                if product_info['max_sale_quantity']:
+                    if product_info['max_sale_quantity'] > 20:
+                        raise InvalidValueException(
+                            'maximum quantity({}) exceed 20'.format(product_info['max_sale_quantity']), 400)
+
+                ## 최소 발주수량이 최대 발주수량보다 큰 경우
+                    if product_info['min_sale_quantity']:
+                        if product_info['min_sale_quantity'] > product_info['max_sale_quantity']:
+                            raise InvalidValueException('minimum quantity bigger than maximum', 400)
+
+                ## 1줄 상품소개가 100자를 초과하는 경우
+                if product_info['short_introduction']:
+                    if len(product_info['short_introduction']) > 100:
+                        raise InvalidValueException('short_introduction too long', 400)
+
+                ## 할인율이 음수이거나 100%를 초과하는 경우
+                if product_info['discount_ratio']:
+                    if product_info['discount_ratio'] not in range(0, 100):
+                        return InvalidValueException('discount ratio must be between 0 and 99', 400)
+
+                ## 할인기간이 유한하나 시작날짜 또는 종료날짜만 선택된 경우
+                if product_info['discount_start_date'] or product_info['discount_end_date']:
+                    if not product_info['discount_end_date'] or not ['discount_start_date']:
+                        raise InvalidValueException('must have both start and end date', 400)
+
+                    ## 할인기간 종료날짜가 시작날짜보다 앞서는 경우
+                    if date.fromisoformat(product_info['discount_start_date']) > date.fromisoformat(product_info['discount_end_date']):
+                        raise InvalidValueException('there end date precedes the start date', 400)
+
                 new_product_id = product_service.create_new_product(db, product_info)
+
+                product_images = []
+
+                for idx in range(1, 6):
+                    product_image = request.files.get('image_{}'.format(idx), None)
+
+                    if product_image:
+                        if allowed_file(product_image.filename) is False:
+                            raise FileException('the extension of that file is not available', 400)
+
+                        product_images.append(product_image)
+
+                image_urls = product_service.upload_product_image(s3, product_images, new_product_id)
+
+                product_service.create_product_image_url(db, product_info, image_urls)
+
                 db.commit()
+
 
                 return jsonify({'message' : 'success', 'product_id' : new_product_id}), 200
             except KeyError as e:
@@ -245,37 +311,5 @@ def product_endpoints(product_service):
         finally:
             if db:
                 db.close()
-
-    # @product_app.route('/upload_images', methods=['POST'])
-    # def upload_product_iamges():
-    #     db = None
-    #     try:
-    #         db = db_connection()
-    #         s3 = s3_connection()
-    #         images = request.files
-    #
-    #         product_image_upload = product_service.upload_product_images(db, s3, images)
-    #         product_info = request.form.to_dict(flat=False)
-    #         product_info['images'] = product_image_upload
-    #
-    #         db.commit()
-    #
-    #         return jsonify({'message' : 'success', 'product_id' : product_image_upload}), 200
-    #     except NotExistsException as e:
-    #         db.rollback()
-    #         return jsonify({'message' : e.message}), e.status_code
-    #     except InvalidValueException as e:
-    #         db.rollback()
-    #         return jsonify({'message': e.message}), e.status_code
-    #     except KeyError as e:
-    #         db.rollback()
-    #         return jsonify({'message' : 'key_error {}'.format(e)}), 400
-    #     except Exception as e:
-    #         db.rollback()
-    #         return jsonify({'message' : 'error {}'.format(e)}), 500
-    #     finally:
-    #         if db:
-    #             db.close()
-
 
     return product_app
