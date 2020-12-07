@@ -40,7 +40,6 @@
         />
       </div>
       <input
-        tabindex="-1"
         class="input-box"
         :class="{ noIcon: icon == undefined }"
         :type="type"
