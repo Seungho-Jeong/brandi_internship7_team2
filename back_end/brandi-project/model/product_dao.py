@@ -110,7 +110,21 @@ class ProductDao:
 
             return cursor.fetchall()
 
-    def select_product_subcategory(self, db, category_id):
+    def select_match_product_category_and_seller(self, db, search_params):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    s.id
+                FROM
+                    sellers AS s
+                WHERE
+                    s.seller_category_id = %(category_id)s
+                    AND s.id = %(seller_id)s
+            """, search_params)
+
+            return cursor.fetchall()
+
+    def select_product_subcategory(self, db, search_params):
         """
         상품의 서브 카테고리(2차 카테고리)를 DB Select하는 함수입니다
         :param db: 데이터베이스 연결 객체
@@ -128,8 +142,8 @@ class ProductDao:
                     INNER JOIN product_categories_type AS cat
                         ON subcat.product_category_id = cat.id
                 WHERE
-                    subcat.product_category_id = %s
-            """, category_id)
+                    subcat.product_category_id = %(category_id)s
+            """, search_params)
 
             return cursor.fetchall()
 
@@ -157,41 +171,59 @@ class ProductDao:
 
             return cursor.fetchall()
 
-    def insert_product_option(self, db, data):
+    def insert_product_option(self, db, product_info):
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO options (
+                    seller_id,
+                    product_id,
                     color_id,
                     size_id,
-                    product_id,
-                    seller_id,
                     option_ordering
                 ) VALUES (
+                    %(seller_id)s,
+                    %(product_id)s,
                     %(color_id)s,
                     %(size_id)s,
-                    %(product_id)s,
-                    %(seller_id)s,
                     %(option_ordering)s
                 )
-            """, data)
+            """, product_info)
 
             return cursor.lastrowid
 
-    def insert_product_inventory(self, db, data):
+    def insert_product_inventory(self, db, product_info):
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO inventory_settings(
-                    option_id,
-                    inventory,
                     seller_id,
-                    product_id
+                    product_id,
+                    option_id,
+                    inventory
                 ) VALUES (
-                    %(option_id)s,
-                    %(inventory_id)s,
                     %(seller_id)s,
-                    %(product_id)s
+                    %(product_id)s,
+                    %(option_id)s,
+                    %(inventory_id)s
                 )
-            """, data)
+            """, product_info)
+
+            return cursor.lastrowid
+
+    def insert_product_discount_info(self, db, product_info):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO discounts(
+                    seller_id,
+                    product_id,
+                    discount_start_date,
+                    discount_end_date
+                ) VALUES (
+                    %(seller_id)s,
+                    %(product_id)s,
+                    %(discount_start_date)s,
+                    %(discount_end_date)s
+                )
+            """, product_info)
 
             return cursor.lastrowid
 
@@ -230,9 +262,9 @@ class ProductDao:
                     DEFAULT,
                     %(seller_id)s,
                     DEFAULT,
-                    %(registration_status_id)s,
-                    %(sale_status_id)s,
-                    %(display_status_id)s,
+                    DEFAULT,
+                    DEFAULT,
+                    DEFAULT,
                     DEFAULT,
                     %(product_subcategory_id)s
                 )

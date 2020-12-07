@@ -1,11 +1,9 @@
-import jwt
-import bcrypt
-from datetime import datetime, timedelta
+from PIL import Image
 
-from itertools      import product
+from datetime       import datetime, timedelta, date
 
 from util.exception import NotExistsException, InvalidValueException
-from config         import SECRET, ALGORITHM
+from config         import SECRET, ALGORITHM, BUCKET_NAME
 
 
 class ProductService:
@@ -54,15 +52,19 @@ class ProductService:
 
         return subcategory_id
 
-    def get_product_subcategory(self, db, category_id):
+    def get_product_subcategory(self, db, search_params):
         """
         상품의 카테고리(1차 카테고리) ID가 주어지면 서브 카테고리(2차 카테고리)를 가져오는 함수입니다.
+        :param search_params:
         :param db: 데이터베이스 연결 객체
-        :param category_id: 카테고리 ID (product_category_id)
         :return: 서브 카테고리 리스트
         """
 
-        subcategory_id = self.product_dao.select_product_subcategory(db, category_id)
+        inspection_result = self.product_dao.select_match_product_category_and_seller(db, search_params)
+        if not inspection_result:
+            raise NotExistsException('category inquiry failed', 401)
+
+        subcategory_id = self.product_dao.select_product_subcategory(db, search_params)
 
         return subcategory_id
 
@@ -91,6 +93,35 @@ class ProductService:
         :return: 신규 등록 상품 ID
         """
 
+        ## 상품명이 100자를 초과하는 경우 Error raise
+        if len(product_info['product_name']) > 100:
+            raise InvalidValueException('product name too long')
+
+        ## 옵션의 수(sizes by colors)와 재고가 일치하지 않으면 Error raise
+        if len(product_info['sizes']) * len(product_info['colors']) != len(product_info['inventories']):
+            raise InvalidValueException('not match options and inventories', 400)
+
+        ## 최소 발주수량이 있는 경우 : 20개 이상으로 지정하면 Error raise
+        if product_info['min_sale_quantity']:
+            if product_info['min_sale_quantity'] > 20:
+                raise InvalidValueException('minimum quantity({}) exceed 20'.format(product_info['min_sale_quantity']), 400)
+
+        ## 최대 발주수량이 있는 경우 : 20개 이상으로 지정하면 Error raise
+        if product_info['max_sale_quantity']:
+            if product_info['max_sale_quantity'] > 20:
+                raise InvalidValueException('maximum quantity({}) exceed 20'.format(product_info['max_sale_quantity']), 400)
+
+        ## 최소/최대 발주수량이 있는 경우 : 최소 발주수량이 최대 발주수량보다 크면 Error raise
+            if product_info['min_sale_quantity']:
+                if product_info['min_sale_quantity'] > product_info['max_sale_quantity']:
+                    raise InvalidValueException('minimum quantity bigger than maximum', 400)
+
+        ## 1줄 상품소개가 있는 경우 : 100자를 초과하면 Error raise
+        if product_info['short_introduction']:
+            if len(product_info['short_introduction']) > 100:
+                raise InvalidValueException('short_introduction too long')
+
+
         ## 1. 신규 상품 Insert 후 new_product_id 생성
         new_product_id = self.product_dao.insert_product_information(db, product_info)
 
@@ -111,6 +142,16 @@ class ProductService:
                     product_info['option_id']    = option_id
                     product_info['inventory_id'] = inventory
                     self.product_dao.insert_product_inventory(db, product_info)
+
+        ## 4. 할인정보 기간이 있는 경우(할인율만 있고 기간이 없는 경우 무기한 할인으로 저장)
+        if product_info['discount_start_date'] or product_info['discount_end_date']:
+            if not product_info['discount_start_date'] or not ['discount_start_date']:
+                raise InvalidValueException('must have both start and end date', 400)
+
+            if date.fromisoformat(product_info['discount_start_date']) > date.fromisoformat(product_info['discount_end_date']):
+                raise InvalidValueException('there end date precedes the start date', 400)
+
+            self.product_dao.insert_product_discount_info(db, product_info)
 
         return new_product_id
 
@@ -138,3 +179,11 @@ class ProductService:
             raise InvalidValueException('no information change', 400)
 
         return  modify_result
+
+    # def upload_product_images(self, db, s3, images):
+    #     product_image = {}
+    #     try:
+    #         for idx in range(1,6):
+    #             if images.get('product_image_{}'.format(idx), None) is not None:
+    #                 product_image[images['product_image_{}'.format(idx)].name] = images.get('product_image_{}', None)
+    #     return product_image
