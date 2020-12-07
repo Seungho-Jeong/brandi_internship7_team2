@@ -254,8 +254,7 @@ class UserService:
                 Bucket=BUCKET_NAME,
                 Body=profile_image,
                 Key=s3_path,
-                ContentType=profile_image.content_type,
-                ContentDisposition='attachment')
+                ContentType=profile_image.content_type)
             location = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
             image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
             data['profile_image'] = image_url
@@ -271,8 +270,7 @@ class UserService:
                 Bucket=BUCKET_NAME,
                 Body=background_image,
                 Key=s3_path,
-                ContentType=background_image.content_type,
-                ContentDisposition='attachment')
+                ContentType=background_image.content_type)
             location = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
             image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
 
