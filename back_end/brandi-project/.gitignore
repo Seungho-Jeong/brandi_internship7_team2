@@ -11,7 +11,13 @@ user_image.*
 *.log
 *.pot
 *.pyc
+*/*/*/__pycache__/
+*/*/__pycache__/
+*/__pycache__/
 __pycache__/
+.service/__pycache__/
+.view/__pycache__/
+.model/__pycache__/
 
 ### vscode ###
 .vscode/*
