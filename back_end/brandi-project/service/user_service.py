@@ -273,6 +273,7 @@ class UserService:
                 Key=s3_path,
                 ContentType=background_image.content_type,
                 ContentDisposition='attachment')
+            location = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
             image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
 
             image = Image.open(background_image)

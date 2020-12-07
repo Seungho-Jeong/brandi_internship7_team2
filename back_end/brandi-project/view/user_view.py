@@ -9,7 +9,8 @@ from util.exception import (
     InvalidValueException,
     PermissionException,
     PathParameterException,
-    FileException
+    FileException,
+    RequestException
 )
 from util.validation import KeywordValidation
 from db_connection   import db_connection, s3_connection
@@ -35,11 +36,18 @@ def user_endpoints(user_service):
         try:
             db = db_connection()
             data = request.json
+            print(data)
+
+            if not data:
+                raise RequestException
 
             user_service.sign_up(db, data)
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except ExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -66,12 +74,18 @@ def user_endpoints(user_service):
             db = db_connection()
             data = request.json
 
+            if not data:
+                raise RequestException
+
             keyword_validation.signin(data)
 
             access_token = user_service.sign_in(db, data)
             db.commit()
 
             return jsonify({'message' : 'success', 'access_token' : access_token}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except PermissionException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -221,6 +235,10 @@ def user_endpoints(user_service):
             db = db_connection()
             s3 = s3_connection()
             form_data = dict(request.form)
+
+            if not form_data:
+                raise RequestException
+
             data = json.loads(form_data['body'])
 
             if request.files:
@@ -254,6 +272,9 @@ def user_endpoints(user_service):
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except RequestEntityTooLarge:
             db.rollback()
             return jsonify({'message': 'image files cannot exceed 5MB'}), 400
@@ -293,6 +314,9 @@ def user_endpoints(user_service):
             db = db_connection()
             data = request.json
 
+            if not data:
+                raise RequestException
+
             if not request.is_master:
                 raise PermissionException
 
@@ -301,6 +325,9 @@ def user_endpoints(user_service):
             db.commit()
 
             return jsonify({'message' : 'success'}), 200
+        except RequestException as e:
+            db.rollback()
+            return jsonify({'message': e.message}), e.status_code
         except PermissionException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
