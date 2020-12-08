@@ -1,5 +1,6 @@
 import jwt
 import bcrypt
+import uuid
 from datetime import datetime, timedelta
 
 from util.exception import NotExistsException, ExistsException, InvalidValueException
@@ -183,7 +184,7 @@ class UserService:
         # 파일 업로드
         if data['profile_image']:
             profile_image = data['profile_image']
-            file_name = 'profile'
+            file_name = 'profile_' + str(uuid.uuid4())
 
             s3_path = f'image/user_image/{seller_id}/{file_name}'
             s3.put_object(
@@ -197,7 +198,7 @@ class UserService:
 
         if data['background_image']:
             background_image = data['background_image']
-            file_name = 'background'
+            file_name = 'background_' + str(uuid.uuid4())
 
             s3_path = f'image/user_image/{seller_id}/{file_name}'
             s3.put_object(
