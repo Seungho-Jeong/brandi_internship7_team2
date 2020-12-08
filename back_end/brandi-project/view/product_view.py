@@ -194,9 +194,6 @@ def product_endpoints(product_service):
         else:
             db = None
             try:
-                db = db_connection()
-                s3 = s3_connection()
-
                 form_data    = dict(request.form)
                 product_info = json.loads(form_data['body'])
                 seller_id    = request.seller_id
@@ -205,7 +202,7 @@ def product_endpoints(product_service):
                 if not is_master:
                     product_info['seller_id'] = seller_id
 
-                keyword_validation.create_new_product(product_info)
+                # keyword_validation.create_new_product(product_info)
 
                 ## 옵션 정보가 없는 경우
                 if product_info['sizes'] is None or product_info['colors'] is None:
@@ -265,10 +262,13 @@ def product_endpoints(product_service):
                         raise InvalidValueException('there end date precedes the start date', 400)
 
                 ## 1. 신규 상품 ID 생성
+                db             = db_connection()
                 new_product_id = product_service.create_new_product(db, product_info)
 
                 ## 2. 이미지 S3 업로드
+                s3             = s3_connection()
                 product_images = []
+
                 for idx in range(1, 6):
                     product_image = request.files.get('image_{}'.format(idx), None)
 

@@ -104,28 +104,29 @@ class ProductService:
         ## 1. 신규 상품 Insert 후 new_product_id 생성
         new_product_id = self.product_dao.insert_product_information(db, product_info)
 
-        ## 2. 할인 기간이 유한하면 할인기간을 Insert
+        ## 2. 할인 기간이 있으면 할인기간을 Insert
         if product_info['discount_start_date'] or product_info['discount_end_date']:
             product_info['product_id'] = new_product_id
             self.product_dao.insert_product_discount_info(db, product_info)
 
-        ## 3. 제조정보
+        ## 3. 제조정보가 있으면 제조기간을 Insert
         if product_info['manufacturing_country_id']:
             product_info['product_id'] = new_product_id
             self.product_dao.insert_product_manufacturing_information(db, product_info)
 
         ## 4. 옵션 생성
         new_option_id_list = []
-        ordering = 1
+
+        ordering_number    = 1
         for size in product_info['sizes']:
             for color in product_info['colors']:
                 product_info['product_id']      = new_product_id
                 product_info['size_id']         = size
                 product_info['color_id']        = color
-                product_info['option_ordering'] = ordering
+                product_info['option_ordering'] = ordering_number
 
                 option_id = self.product_dao.insert_product_option(db, product_info)
-                ordering += 1
+                ordering_number += 1
 
                 new_option_id_list.append(option_id)
 
@@ -136,6 +137,57 @@ class ProductService:
             self.product_dao.insert_product_inventory(db, product_info)
 
         return new_product_id
+
+    def upload_product_image(self, s3, product_images, new_product_id):
+        """
+        신규 상품 등록 시 이미지가 있으면 Amazon S3 서버에 이미지를 업로드하는 함수입니다
+        :param s3: S3 connection instance
+        :param product_images: Database connection instance
+        :param new_product_id: 신규 상품 ID(before db.commit)
+        :return: RDB용 이미지 url 리스트
+        """
+
+        image_urls = []
+
+        for product_image in product_images:
+
+            ## image path variable
+            created_at = datetime.now()
+            year       = created_at.year
+            month      = created_at.month
+            day        = created_at.day
+            filename   = product_image.filename
+
+            s3_path = f'image/product/{year}/{month}/{day}/{new_product_id}/{created_at}_{filename}'
+            s3.put_object(
+                Bucket=BUCKET_NAME,
+                Body=product_image,
+                Key=s3_path,
+                ContentType=product_image.content_type
+            )
+            location  = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
+            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
+
+            image_urls.append(image_url)
+
+        return image_urls
+
+    def create_product_image_url(self, db, product_info, image_urls):
+        """
+        Amazon S3에 이미지를 업로드한 경우 이미지 url을 RDB에 Insert하는 함수입니다
+        :param db: Database connection instance
+        :param product_info: 이미지 업로드 대상 상품의 정보
+        :param image_urls: S3 서버에 업로드된 이미지의 url 리스트
+        :return:
+        """
+
+        ordering_number = 1
+        for image_url in image_urls:
+            product_info['image_url'] = image_url
+            product_info['image_ordering'] = ordering_number
+
+            self.product_dao.insert_product_image(db, product_info)
+            ordering_number += 1
 
     def update_product_information(self, db, modify_data):
         """
@@ -160,45 +212,3 @@ class ProductService:
             raise InvalidValueException('no information change', 400)
 
         return  modify_result
-
-    def upload_product_image(self, s3, product_images, new_product_id):
-        """
-        신규 상품 등록 시 이미지가 있으면 Amazon S3 서버에 이미지를 업로드하는 함수입니다
-        :param s3: S3 connection instance
-        :param product_images: Database connection instance
-        :param new_product_id: 신규 상품 ID(before db.commit)
-        :return: RDB용 이미지 url 리스트
-        """
-
-        image_urls = []
-
-        for product_image in product_images:
-            s3_path = f'image/product/{new_product_id}/{datetime.now()}_{product_image.filename}'
-            s3.put_object(
-                Bucket             = BUCKET_NAME,
-                Body               = product_image,
-                Key                = s3_path,
-                ContentType        = product_image.content_type
-            )
-            location  = s3.get_bucket_location(Bucket = BUCKET_NAME)['LocationConstraint']
-            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/image/product/{s3_path}'
-
-            image_urls.append(image_url)
-
-        return image_urls
-
-    def create_product_image_url(self, db, product_info, image_urls):
-        """
-        Amazon S3에 이미지를 업로드한 경우 이미지 url을 RDB에 Insert하는 함수입니다
-        :param db: Database connection instance
-        :param product_info: 이미지 업로드 대상 상품의 정보
-        :param image_urls: S3 서버에 업로드된 이미지의 url 리스트
-        :return:
-        """
-        ordering = 1
-        for image_url in image_urls:
-            product_info['image_url']      = image_url
-            product_info['image_ordering'] = ordering
-
-            self.product_dao.insert_product_image(db, product_info)
-            ordering += 1

@@ -344,6 +344,7 @@ class ProductDao:
             return cursor.lastrowid
 
     def insert_product_manufacturing_information(self, db, product_info):
+        # print(product_info)
         """
         상품 신규등록 과정에서 제조정보를 별도 입력한 경우
         RDB에 해당 상품의 제조정보를 Insert하는 함수입니다.
