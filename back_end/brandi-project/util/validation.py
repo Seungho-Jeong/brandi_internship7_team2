@@ -1,12 +1,15 @@
 def validation(data, lst, func_name):
-    index = 0
+    data_list = []
+    # 틀린 key 값을 요청받았을 경우
     for key in data:
+        data_list.append(key)
         if key not in lst:
-            raise KeyError(f"invalid key '{key}' in '{func_name}'")
-        index += 1
+            raise KeyError(f'{func_name}에서 {key}값은 잘못된 키값입니다.')
 
-    if index != len(lst):
-        raise KeyError(f"required key '{key}' in '{func_name}'")
+    # 특정 key 값을 요청하지 않은 경우
+    keys = list(set(lst) - set(data_list))
+    if keys:
+        raise KeyError(f'{func_name}에서 {keys[0]}값이 필요합니다.')
 
 
 class KeywordValidation:
@@ -16,6 +19,7 @@ class KeywordValidation:
             'seller_category_id',
             'account',
             'password',
+            'manager_mobile',
             'seller_name_ko',
             'seller_name_en',
             'cs_contact',

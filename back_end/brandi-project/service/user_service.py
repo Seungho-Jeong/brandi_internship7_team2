@@ -1,11 +1,8 @@
 import jwt
 import bcrypt
 from datetime import datetime, timedelta
-from PIL      import Image
 
-from flask          import current_app
-
-from util.exception import NotExistsException, ExistsException, InvalidValueException, FileException
+from util.exception import NotExistsException, ExistsException, InvalidValueException
 from config         import SECRET, ALGORITHM, BUCKET_NAME
 
 
@@ -23,7 +20,7 @@ class UserService:
         """
 
         if self.user_dao.check_account(db, data):
-            raise ExistsException('already existed account', 409)
+            raise ExistsException('이미 존재하는 계정입니다.', 409)
 
         hashed_pw = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
         data['password'] = hashed_pw.decode('utf-8')
@@ -31,11 +28,16 @@ class UserService:
         seller_id = self.user_dao.sign_up(db, data)
 
         self.user_dao.create_seller_information(db, seller_id)
+        data['manager_name'] = None
+        data['manager_email'] = None
+        data['ordering'] = 1
+        data['seller_id'] = seller_id
+        self.user_dao.create_managers(db, data)
 
         # 로그 테이블 생성
         user_info = self.user_dao.get_seller_information(db, seller_id)
         user_info['manager_name'] = None
-        user_info['manager_mobile'] = None
+        user_info['manager_mobile'] = data['manager_mobile']
         user_info['manager_email'] = None
         self.user_dao.create_seller_logs(db, user_info)
 
@@ -52,14 +54,13 @@ class UserService:
         user_id = self.user_dao.check_account(db, data)
 
         if not user_id:
-            raise NotExistsException('not exists account', 400)
+            raise NotExistsException('아이디나 비밀번호가 일치하지 않습니다.', 400)
 
         user_info = self.user_dao.sign_in(db, data)
 
         if not bcrypt.checkpw(data['password'].encode('utf-8'), user_info['password'].encode('utf-8')):
-            raise NotExistsException('invalid account', 400)
+            raise NotExistsException('아이디나 비밀번호가 일치하지 않습니다.', 400)
 
-        # exp = datetime.utcnow() + timedelta(minutes=30)
         exp = datetime.utcnow() + timedelta(days=1)
         access_token = jwt.encode({'account' : user_info['account'], 'exp' : exp}, SECRET, algorithm=ALGORITHM)
 
@@ -108,7 +109,7 @@ class UserService:
         managers  = self.user_dao.get_managers(db, seller_id)
 
         if not user_info:
-            raise NotExistsException('not exists seller', 400)
+            raise NotExistsException('존재하지 않는 셀러입니다.', 400)
 
         user_info['managers'] = managers
 
@@ -135,7 +136,7 @@ class UserService:
             input_count = len(data['managers'])
 
             if len(data['managers']) > 3:  # 리스트를 3개 이상 요청했을 경우
-                raise InvalidValueException('managers are the maximum of 3', 400)
+                raise InvalidValueException('담당매니저는 최대 3개까지만 등록할 수 있습니다.', 400)
 
             count = exist_count if exist_count > input_count else input_count
             # 기존개수가 많으면 기존개수(exist_count)만큼, 기존개수가 더 적으면 입력개수(input_count)만큼 반복
@@ -166,7 +167,7 @@ class UserService:
 
             if not ordering:  # 기존에 존재하지 않았으나 request 는 있는 경우 (전체생성)
                 if len(data['managers']) > 3:  # 리스트를 3개 이상 요청했을 경우
-                    raise InvalidValueException('managers are the maximum of 3', 400)
+                    raise InvalidValueException('담당매니저는 최대 3개까지만 등록할 수 있습니다.', 400)
 
                 for manager in data['managers']:
                     manager_info = manager
@@ -175,80 +176,15 @@ class UserService:
                     self.user_dao.create_managers(db, manager_info)
                     order_index += 1
 
-        # if ordering:  # 기존에 매니저가 존재했는지 체크
-        #     if data['managers']:  # 기존에 매니저가 존재하고, request 에도 있는 경우
-        #         if len(data['managers']) > 3:  # 리스트를 3개 이상 요청했을 경우
-        #             raise InvalidValueException('managers are the maximum of 3', 400)
-        #
-        #         row_count = ordering['ordering']
-        #         input_count = len(data['managers'])
-        #
-        #         order_index = 1
-        #         if row_count == input_count:  # 기존의 개수와 똑같은 경우 (수정)
-        #             for manager_info in data['managers']:
-        #                 manager_info['seller_id'] = seller_id
-        #                 manager_info['ordering'] = order_index
-        #                 self.user_dao.update_managers(db, manager_info)
-        #                 order_index += 1
-        #
-        #         elif row_count > input_count:  # 기존의 개수가 더 많을 경우 (수정->삭제)
-        #             for manager_info in data['managers']:
-        #                 manager_info['seller_id'] = seller_id
-        #                 manager_info['ordering'] = order_index
-        #                 self.user_dao.update_managers(db, manager_info)
-        #                 order_index += 1
-        #
-        #             for i in range(row_count - input_count):
-        #                 manager_info = {
-        #                     'seller_id' : seller_id,
-        #                     'ordering'  : order_index
-        #                 }
-        #                 self.user_dao.delete_managers(db, manager_info)
-        #                 order_index += 1
-        #
-        #         elif row_count < input_count:  # 기존의 개수가 더 적을 경우 (수정->생성)
-        #             for i in range(row_count):
-        #                 manager_info = data['managers'][i]
-        #                 manager_info['seller_id'] = seller_id
-        #                 manager_info['ordering'] = order_index
-        #                 self.user_dao.update_managers(db, manager_info)
-        #                 order_index += 1
-        #
-        #             for manager_info in data['managers'][order_index - 1:input_count]:
-        #                 manager_info['seller_id'] = seller_id
-        #                 manager_info['ordering'] = order_index
-        #                 self.user_dao.create_managers(db, manager_info)
-        #                 order_index += 1
-        #
-        #     else:  # 기존에 존재했으나, request 에는 없는 경우 (삭제)
-        #         row_count = ordering['ordering']
-        #
-        #         for order_index in range(1, row_count + 1):
-        #             manager_info = {
-        #                 'seller_id' : seller_id,
-        #                 'ordering'  : order_index
-        #             }
-        #             self.user_dao.delete_managers(db, manager_info)
-        # else:  # 기존에는 존재하지 않는 경우 (생성)
-        #     order_index = 1
-        #     for manager_info in data['managers']:
-        #         manager_info['seller_id'] = seller_id
-        #         manager_info['ordering'] = order_index
-        #         self.user_dao.create_managers(db, manager_info)
-        #         order_index += 1
-
         data.pop('managers')
         data['seller_id'] = seller_id
         data['modifier_id'] = modifier_id
 
         # 파일 업로드
-        path = current_app.config['UPLOAD_FOLDER'] + f'/{seller_id}/'
         if data['profile_image']:
             profile_image = data['profile_image']
-            file_name = 'profile.' + profile_image.filename.split('.')[1].lower()
-            image_path = path + 'profile_image'
-            data['profile_image'] = f'{image_path}/{file_name}'
-            
+            file_name = 'profile'
+
             s3_path = f'image/user_image/{seller_id}/{file_name}'
             s3.put_object(
                 Bucket=BUCKET_NAME,
@@ -261,9 +197,7 @@ class UserService:
 
         if data['background_image']:
             background_image = data['background_image']
-            file_name = 'background.' + background_image.filename.split('.')[1].lower()
-            image_path = path + 'background_image'
-            data['background_image'] = f'{image_path}/{file_name}'
+            file_name = 'background'
 
             s3_path = f'image/user_image/{seller_id}/{file_name}'
             s3.put_object(
@@ -273,13 +207,6 @@ class UserService:
                 ContentType=background_image.content_type)
             location = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
             image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
-
-            image = Image.open(background_image)
-            width, height = image.size
-
-            if width < 1200 or height < 850:
-                raise FileException('please register background Image in size 1200 * 850 or larger', 400)
-
             data['background_image'] = image_url
 
         self.user_dao.update_seller_information(db, data)
@@ -316,7 +243,7 @@ class UserService:
 
         # 존재하지 않는 shop_status_id
         if not shop_status_type:
-            raise NotExistsException('not exists shop_status_id', 400)
+            raise NotExistsException('존재하지 않는 상태값(shop_status_id) 입니다.', 400)
 
         seller_status = self.user_dao.get_shop_status(db, seller_id)
         seller_status_id = seller_status['shop_status_id']
@@ -324,23 +251,23 @@ class UserService:
         # 현재 상태에 따른 상태 변경 exception
         if seller_status_id == 1:  # 입점대기
             if data['shop_status_id'] != 2:
-                raise InvalidValueException('invalid shop_status_id', 400)
+                raise InvalidValueException('잘못된 상태값(shop_status_id) 입니다.', 400)
 
         elif seller_status_id == 2:  # 입점
             if data['shop_status_id'] != 4 and data['shop_status_id'] != 5:
-                raise InvalidValueException('invalid shop_status_id', 400)
+                raise InvalidValueException('잘못된 상태값(shop_status_id) 입니다.', 400)
 
         elif seller_status_id == 3:  # 퇴점
-            raise InvalidValueException('invalid shop_status_id', 400)
+            raise InvalidValueException('잘못된 상태값(shop_status_id) 입니다.', 400)
 
         elif seller_status_id == 4:  # 퇴점대기
             if data['shop_status_id'] != 2 and data['shop_status_id'] != 5 \
                     and data['shop_status_id'] != 3:
-                raise InvalidValueException('invalid shop_status_id', 400)
+                raise InvalidValueException('잘못된 상태값(shop_status_id) 입니다.', 400)
 
         elif seller_status_id == 5:  # 휴점
             if data['shop_status_id'] != 2 and data['shop_status_id'] != 4:
-                raise InvalidValueException('invalid shop_status_id', 400)
+                raise InvalidValueException('잘못된 상태값(shop_status_id) 입니다.', 400)
 
         self.user_dao.update_shop_status(db, data)
         
