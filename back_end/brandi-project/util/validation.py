@@ -58,3 +58,28 @@ class KeywordValidation:
         ]
         validation(data, lst, '입점 상태 수정')
 
+    # 상품 신규 등록
+    def create_new_product(self, data):
+        lst = [
+            'seller_id'
+            'product_subcategory_id'
+            'product_name'
+            'price'
+            'manufacturing_country_id'
+            'manufacturing_date'
+            'manufacturing_company'
+            'short_introduction'
+            'product_detail_information'
+            'discount_ratio'
+            'discount_start_date'
+            'discount_end_date'
+            'min_sale_quantity'
+            'max_sale_quantity'
+            'registration_status_id'
+            'sale_status_id'
+            'display_status_id'
+            'colors'
+            'sizes'
+            'inventories'
+        ]
+        validation(data, lst, '상품 신규 등록')
