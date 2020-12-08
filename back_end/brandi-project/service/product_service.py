@@ -1,8 +1,9 @@
 from PIL import Image
 
 from flask          import current_app
+from datetime       import date, datetime
 
-from util.exception import NotExistsException, InvalidValueException, ALLOWED_EXTENSIONS
+from util.exception import NotExistsException, InvalidValueException
 from config         import SECRET, ALGORITHM, BUCKET_NAME
 
 class ProductService:
@@ -17,16 +18,23 @@ class ProductService:
         :return: 상품 상세정보(JSON)
         """
 
+        ## 관리자 계정이 아닌 경우 자신이 보유한 상품인지 검사
         if search_params['seller_id']:
             if not self.product_dao.select_match_product_and_seller(db, search_params):
                 raise InvalidValueException('product inquiry failed', 401)
 
-        product_info = self.product_dao.select_product_information(db, search_params)
+        product_info   = self.product_dao.select_product_information(db, search_params)
+        product_images = self.product_dao.select_product_image(db, search_params)
 
-        if not product_info:
+        product_detail = {
+            'product_info' : product_info,
+            'product_image': [dict(image) for image in product_images]
+        }
+
+        if not product_detail:
             raise NotExistsException('not exists product', 400)
 
-        return product_info
+        return product_detail
 
     def get_product_seller(self, db, seller_name):
         """
@@ -67,22 +75,24 @@ class ProductService:
 
         return subcategory_id
 
-    def get_product_color_size(self, db):
+    def get_product_color_size_country(self, db):
         """
         상품 카테고리(1차 카테고리)를 가져오는 함수입니다.
         :param db: 데이터베이스 연결 객체
         :return: 카테고리 리스트(JSON)
         """
 
-        color_list    = self.product_dao.select_product_color(db)
         size_list     = self.product_dao.select_product_size(db)
+        color_list    = self.product_dao.select_product_color(db)
+        country_list  = self.product_dao.select_product_country(db)
 
-        color_size_list = {
-            'colors' : [dict(color) for color in color_list],
-            'sizes'  : [dict(size) for size in size_list]
+        color_size_country_list = {
+            'sizes'    : [dict(size) for size in size_list],
+            'colors'   : [dict(color) for color in color_list],
+            'countries': [dict(country) for country in country_list]
         }
 
-        return color_size_list
+        return color_size_country_list
 
     def create_new_product(self, db, product_info):
         """
@@ -99,6 +109,11 @@ class ProductService:
         if product_info['discount_start_date'] or product_info['discount_end_date']:
             product_info['product_id'] = new_product_id
             self.product_dao.insert_product_discount_info(db, product_info)
+
+        ## 5. 제조정보
+        if product_info['manufacturing_country_id']:
+            product_info['product_id'] = new_product_id
+            self.product_dao.insert_product_manufacturing_information(db, product_info)
 
         ## 3. 각 옵션 & Ordering Number Insert 후 option_id 생성
         ordering = 1
@@ -145,7 +160,7 @@ class ProductService:
 
         return  modify_result
 
-    def upload_product_image(self, s3, product_images,new_product_id):
+    def upload_product_image(self, s3, product_images, new_product_id):
         image_urls = []
 
         for product_image in product_images:
@@ -156,14 +171,18 @@ class ProductService:
                 ContentType        = product_image.content_type,
                 ContentDisposition = 'attachment'
             )
-            location = s3.get_bucket_location(Bucket = BUCKET_NAME)['LocationConstraint']
-            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{new_product_id}_{product_image.filename}'
+            location  = s3.get_bucket_location(Bucket = BUCKET_NAME)['LocationConstraint']
+            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/images/product/{new_product_id}/{datetime.now()}_{product_image.filename}'
             image_urls.append(image_url)
 
         return image_urls
 
     def create_product_image_url(self, db, product_info, image_urls):
+
+        ordering = 1
         for image_url in image_urls:
-            product_info['image_url'] = image_url
+            product_info['image_url']      = image_url
+            product_info['image_ordering'] = ordering
 
             self.product_dao.insert_product_image(db, product_info)
+            ordering += 1

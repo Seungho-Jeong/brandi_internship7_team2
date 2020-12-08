@@ -1,7 +1,7 @@
 import json
 
 from flask          import Blueprint, request, jsonify
-from datetime       import date
+from datetime       import datetime, date
 
 from util.exception import (
     ALLOWED_EXTENSIONS,
@@ -166,9 +166,9 @@ def product_endpoints(product_service):
             try:
                 db = db_connection()
 
-                color_size_list = product_service.get_product_color_size(db)
+                color_size_country_list = product_service.get_product_color_size_country(db)
 
-                return jsonify({'message' : 'success', 'product_detail': color_size_list}), 200
+                return jsonify({'message' : 'success', 'product_detail': color_size_country_list}), 200
             except Exception as e:
                 return jsonify({'message' : 'error {}'.format(e)}), 500
             finally:
@@ -179,11 +179,8 @@ def product_endpoints(product_service):
             try:
                 db = db_connection()
                 s3 = s3_connection()
-                form_data = dict(request.form)
+                form_data    = dict(request.form)
                 product_info = json.loads(form_data['body'])
-                # product_info = request.json
-
-                print(product_info)
 
                 seller_id = request.seller_id
                 is_master = request.is_master
@@ -220,6 +217,11 @@ def product_endpoints(product_service):
                     if product_info['min_sale_quantity']:
                         if product_info['min_sale_quantity'] > product_info['max_sale_quantity']:
                             raise InvalidValueException('minimum quantity bigger than maximum', 400)
+
+                ## 제조일자가 오늘보다 미래인 경우
+                if product_info['manufacturing_date']:
+                    if date.fromisoformat(product_info['manufacturing_date']) > date.today():
+                        raise InvalidValueException('invalid manufacturing date', 400)
 
                 ## 1줄 상품소개가 100자를 초과하는 경우
                 if product_info['short_introduction']:
@@ -258,7 +260,6 @@ def product_endpoints(product_service):
                 product_service.create_product_image_url(db, product_info, image_urls)
 
                 db.commit()
-
 
                 return jsonify({'message' : 'success', 'product_id' : new_product_id}), 200
             except KeyError as e:
