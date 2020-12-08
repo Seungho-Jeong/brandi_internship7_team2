@@ -1,10 +1,7 @@
-from PIL import Image
-
-from datetime       import datetime, timedelta, date
+from datetime       import datetime
 
 from util.exception import NotExistsException, InvalidValueException
-from config         import SECRET, ALGORITHM, BUCKET_NAME
-
+from config         import BUCKET_NAME
 
 class ProductService:
     def __init__(self, product_dao):
@@ -18,16 +15,27 @@ class ProductService:
         :return: 상품 상세정보(JSON)
         """
 
+        ## 일반 셀러계정인 경우 자신이 보유한 상품인지 검사
         if search_params['seller_id']:
             if not self.product_dao.select_match_product_and_seller(db, search_params):
                 raise InvalidValueException('product inquiry failed', 401)
 
-        product_info = self.product_dao.select_product_information(db, search_params)
+        ## 관리자 계정인 경우 조회대상 상품이 있는지 검사
+        else:
+            if not self.product_dao.select_product_information(db, search_params):
+                raise NotExistsException('not exists product', 400)
 
-        if not product_info:
-            raise NotExistsException('not exists product', 400)
+        product_info        = self.product_dao.select_product_information(db, search_params)
+        product_images      = self.product_dao.select_product_image(db, search_params)
+        product_options     = self.product_dao.select_product_option_and_inventory(db, search_params)
 
-        return product_info
+        product_detail = {
+            'product_info'  : product_info,
+            'product_image' : [dict(image) for image in product_images],
+            'product_option': [dict(option) for option in product_options]
+        }
+
+        return product_detail
 
     def get_product_seller(self, db, seller_name):
         """
@@ -36,6 +44,7 @@ class ProductService:
         :param seller_name: 셀러 국문이름(KO)
         :return: 셀러 ID
         """
+
         seller_id = self.product_dao.select_product_seller(db, seller_name)
 
         return seller_id
@@ -48,9 +57,10 @@ class ProductService:
         :return: 서브 카테고리 리스트
         """
 
-        subcategory_id = self.product_dao.select_product_category(db, seller_id)
+        ## 판매자(ID)가 속한 판매자군에서 선택 가능한 카테고리 리스트 조회/반환
+        category_list = self.product_dao.select_product_category(db, seller_id)
 
-        return subcategory_id
+        return category_list
 
     def get_product_subcategory(self, db, search_params):
         """
@@ -60,30 +70,28 @@ class ProductService:
         :return: 서브 카테고리 리스트
         """
 
-        inspection_result = self.product_dao.select_match_product_category_and_seller(db, search_params)
-        if not inspection_result:
-            raise NotExistsException('category inquiry failed', 401)
-
         subcategory_id = self.product_dao.select_product_subcategory(db, search_params)
 
         return subcategory_id
 
-    def get_product_color_size(self, db):
+    def get_product_color_size_country(self, db):
         """
         상품 카테고리(1차 카테고리)를 가져오는 함수입니다.
         :param db: 데이터베이스 연결 객체
         :return: 카테고리 리스트(JSON)
         """
 
-        color_list    = self.product_dao.select_product_color(db)
         size_list     = self.product_dao.select_product_size(db)
+        color_list    = self.product_dao.select_product_color(db)
+        country_list  = self.product_dao.select_product_country(db)
 
-        color_size_list = {
-            'colors' : [dict(color) for color in color_list],
-            'sizes'  : [dict(size) for size in size_list]
+        property_list = {
+            'sizes'    : [dict(size) for size in size_list],
+            'colors'   : [dict(color) for color in color_list],
+            'countries': [dict(country) for country in country_list]
         }
 
-        return color_size_list
+        return property_list
 
     def create_new_product(self, db, product_info):
         """
@@ -93,78 +101,103 @@ class ProductService:
         :return: 신규 등록 상품 ID
         """
 
-        ## 상품명이 100자를 초과하는 경우 Error raise
-        if len(product_info['product_name']) > 100:
-            raise InvalidValueException('product name too long')
-
-        ## 옵션의 수(sizes by colors)와 재고가 일치하지 않으면 Error raise
-        if len(product_info['sizes']) * len(product_info['colors']) != len(product_info['inventories']):
-            raise InvalidValueException('not match options and inventories', 400)
-
-        ## 최소 발주수량이 있는 경우 : 20개 이상으로 지정하면 Error raise
-        if product_info['min_sale_quantity']:
-            if product_info['min_sale_quantity'] > 20:
-                raise InvalidValueException('minimum quantity({}) exceed 20'.format(product_info['min_sale_quantity']), 400)
-
-        ## 최대 발주수량이 있는 경우 : 20개 이상으로 지정하면 Error raise
-        if product_info['max_sale_quantity']:
-            if product_info['max_sale_quantity'] > 20:
-                raise InvalidValueException('maximum quantity({}) exceed 20'.format(product_info['max_sale_quantity']), 400)
-
-        ## 최소/최대 발주수량이 있는 경우 : 최소 발주수량이 최대 발주수량보다 크면 Error raise
-            if product_info['min_sale_quantity']:
-                if product_info['min_sale_quantity'] > product_info['max_sale_quantity']:
-                    raise InvalidValueException('minimum quantity bigger than maximum', 400)
-
-        ## 1줄 상품소개가 있는 경우 : 100자를 초과하면 Error raise
-        if product_info['short_introduction']:
-            if len(product_info['short_introduction']) > 100:
-                raise InvalidValueException('short_introduction too long')
-
-
         ## 1. 신규 상품 Insert 후 new_product_id 생성
         new_product_id = self.product_dao.insert_product_information(db, product_info)
 
-        ## 2. 각 옵션 & Ordering Number Insert 후 option_id 생성
-        ordering = 1
+        ## 2. 할인 기간이 있으면 할인기간을 Insert
+        if product_info['discount_start_date'] or product_info['discount_end_date']:
+            product_info['product_id'] = new_product_id
+            self.product_dao.insert_product_discount_info(db, product_info)
+
+        ## 3. 제조정보가 있으면 제조기간을 Insert
+        if product_info['manufacturing_country_id']:
+            product_info['product_id'] = new_product_id
+            self.product_dao.insert_product_manufacturing_information(db, product_info)
+
+        ## 4. 옵션 생성
+        new_option_id_list = []
+
+        ordering_number    = 1
         for size in product_info['sizes']:
             for color in product_info['colors']:
                 product_info['product_id']      = new_product_id
                 product_info['size_id']         = size
                 product_info['color_id']        = color
-                product_info['option_ordering'] = ordering
+                product_info['option_ordering'] = ordering_number
 
                 option_id = self.product_dao.insert_product_option(db, product_info)
-                ordering += 1
+                ordering_number += 1
 
-        ## 3. 각 옵션에 대한 재고수량 Insert(미입력 시 Null)
-                for inventory in product_info['inventories']:
-                    product_info['option_id']    = option_id
-                    product_info['inventory_id'] = inventory
-                    self.product_dao.insert_product_inventory(db, product_info)
+                new_option_id_list.append(option_id)
 
-        ## 4. 할인정보 기간이 있는 경우(할인율만 있고 기간이 없는 경우 무기한 할인으로 저장)
-        if product_info['discount_start_date'] or product_info['discount_end_date']:
-            if not product_info['discount_start_date'] or not ['discount_start_date']:
-                raise InvalidValueException('must have both start and end date', 400)
-
-            if date.fromisoformat(product_info['discount_start_date']) > date.fromisoformat(product_info['discount_end_date']):
-                raise InvalidValueException('there end date precedes the start date', 400)
-
-            self.product_dao.insert_product_discount_info(db, product_info)
+        ## 5. 각 옵션에 대한 재고수량 Insert(0 : 미지정)
+        for option_id, inventory in zip(new_option_id_list, product_info['inventories']):
+            product_info['option_id'] = option_id
+            product_info['inventory'] = inventory
+            self.product_dao.insert_product_inventory(db, product_info)
 
         return new_product_id
 
-    def update_product_information(self, db, modify_data, is_master):
+    def upload_product_image(self, s3, product_images, new_product_id):
+        """
+        신규 상품 등록 시 이미지가 있으면 Amazon S3 서버에 이미지를 업로드하는 함수입니다
+        :param s3: S3 connection instance
+        :param product_images: Database connection instance
+        :param new_product_id: 신규 상품 ID(before db.commit)
+        :return: RDB용 이미지 url 리스트
+        """
+
+        image_urls = []
+
+        for product_image in product_images:
+
+            ## image path variable
+            created_at = datetime.now()
+            year       = created_at.year
+            month      = created_at.month
+            day        = created_at.day
+            filename   = product_image.filename
+
+            s3_path = f'image/product/{year}/{month}/{day}/{new_product_id}/{created_at}_{filename}'
+            s3.put_object(
+                Bucket=BUCKET_NAME,
+                Body=product_image,
+                Key=s3_path,
+                ContentType=product_image.content_type
+            )
+            location  = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
+            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
+
+            image_urls.append(image_url)
+
+        return image_urls
+
+    def create_product_image_url(self, db, product_info, image_urls):
+        """
+        Amazon S3에 이미지를 업로드한 경우 이미지 url을 RDB에 Insert하는 함수입니다
+        :param db: Database connection instance
+        :param product_info: 이미지 업로드 대상 상품의 정보
+        :param image_urls: S3 서버에 업로드된 이미지의 url 리스트
+        :return:
+        """
+
+        ordering_number = 1
+        for image_url in image_urls:
+            product_info['image_url'] = image_url
+            product_info['image_ordering'] = ordering_number
+
+            self.product_dao.insert_product_image(db, product_info)
+            ordering_number += 1
+
+    def update_product_information(self, db, modify_data):
         """
         상품 정보를 수정하는 함수입니다
-        :param is_master: 관리자 계정 여부(Bool)
         :param modify_data: 수정 대상 상품에 대한 정보
         :param db: 데이터베이스 연결 객체
         """
 
         ## 셀러 계정인 경우 : 대상 상품 보유여부 및 존재여부 확인
-        if not is_master:
+        if not modify_data['is_master']:
             if not self.product_dao.select_match_product_and_seller(db, modify_data):
                 raise InvalidValueException('product inquiry failed', 401)
 
@@ -179,11 +212,3 @@ class ProductService:
             raise InvalidValueException('no information change', 400)
 
         return  modify_result
-
-    # def upload_product_images(self, db, s3, images):
-    #     product_image = {}
-    #     try:
-    #         for idx in range(1,6):
-    #             if images.get('product_image_{}'.format(idx), None) is not None:
-    #                 product_image[images['product_image_{}'.format(idx)].name] = images.get('product_image_{}', None)
-    #     return product_image

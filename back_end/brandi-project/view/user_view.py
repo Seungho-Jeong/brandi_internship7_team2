@@ -36,10 +36,11 @@ def user_endpoints(user_service):
         try:
             db = db_connection()
             data = request.json
-            print(data)
 
             if not data:
                 raise RequestException
+            # key_error 예외처리
+            keyword_validation.signup(data)
 
             user_service.sign_up(db, data)
             db.commit()
@@ -76,7 +77,7 @@ def user_endpoints(user_service):
 
             if not data:
                 raise RequestException
-
+            # key_error 예외처리
             keyword_validation.signin(data)
 
             access_token = user_service.sign_in(db, data)
@@ -252,6 +253,9 @@ def user_endpoints(user_service):
                     raise FileException('the extension of that file is not available', 400)
                 data['background_image'] = background_image if background_image.filename else None
 
+            # key_error 예외처리
+            keyword_validation.update_seller_information(data)
+
             # 마스터
             if request.is_master:
                 if not seller_id:
@@ -316,6 +320,8 @@ def user_endpoints(user_service):
 
             if not data:
                 raise RequestException
+            # key_error 예외처리
+            keyword_validation.update_shop_status(data)
 
             if not request.is_master:
                 raise PermissionException
