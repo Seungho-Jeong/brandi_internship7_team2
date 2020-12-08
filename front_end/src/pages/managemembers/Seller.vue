@@ -24,7 +24,7 @@
                 list-type="picture-card"
                 class="avatar-uploader seller-profile"
                 :show-upload-list="false"
-                action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+                :action="SELLER_FILEUPLOAD"
                 :before-upload="beforeUploadProfile"
                 @change="handleChangeProfile"
                 ref="aUploadProfile"
@@ -75,7 +75,20 @@
           </tr>
           <tr>
             <th>셀러 속성</th>
-            <td>{{ seller_category_id }}</td>
+            <td class="seller-categories">
+              <RadioInputs
+                class="radio"
+                v-for="category in sellerCategoriesByType[category_type_id]"
+                :key="category.categoryId"
+                :id="category.categoryId"
+                :name="sellerCategoriesByType.name"
+                :label="category.label"
+                :value="category.categoryId"
+                :checked="category.categoryId === category_id"
+                v-model="sellerCategoriesByType.selectedCategory"
+                @update:modelValue="setSelectedCategory()"
+              />
+            </td>
           </tr>
           <tr>
             <td class="explanation" colspan="2">
@@ -113,12 +126,13 @@
                 list-type="picture-card"
                 class="avatar-uploader seller-background"
                 :show-upload-list="false"
-                action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+                :action="SELLER_FILEUPLOAD"
                 :before-upload="beforeUploadBackground"
                 @change="handleChangeBackground"
                 ref="aUploadBackground"
               >
                 <img
+                  class="uploaded-image"
                   v-if="backgroundImageUrl"
                   :src="backgroundImageUrl"
                   alt="seller background"
@@ -180,7 +194,7 @@
                 icon="user"
                 :isValid="short_introduction.isValid"
                 v-model.trim="short_introduction.value"
-                @update:modelValue="setInputValue('short_introduction')"
+                @update:modelValue="validateInputs('short_introduction')"
               />
             </td>
           </tr>
@@ -210,9 +224,9 @@
                     type="text"
                     placeholder="담당자명"
                     icon="user"
-                    :isValid="manager1.name.isValid"
-                    v-model.trim="manager1.name.value"
-                    @update:modelValue="setInputValue('manager1_name')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[0].manager_name"
+                    @update:modelValue="validateInputs('manager')"
                   />
                   <InputWithSpan
                     class="input manager"
@@ -220,9 +234,9 @@
                     type="text"
                     placeholder="담당자 핸드폰번호"
                     icon="phone"
-                    :isValid="manager1.mobile.isValid"
-                    v-model.trim="manager1.mobile.value"
-                    @update:modelValue="setInputValue('manager1_mobile')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[0].manager_mobile"
+                    @update:modelValue="validateInputs('manager')"
                   />
                   <InputWithSpan
                     class="input manager"
@@ -230,9 +244,9 @@
                     type="text"
                     placeholder="담당자 이메일"
                     icon="email"
-                    :isValid="manager1.email.isValid"
-                    v-model.trim="manager1.email.value"
-                    @update:modelValue="setInputValue('manager1_email')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[0].manager_email"
+                    @update:modelValue="validateInputs('manager')"
                   />
                 </div>
                 <div class="manager-buttons">
@@ -241,13 +255,9 @@
                   </button>
                 </div>
               </div>
-              <div v-if="manager2.isAdded" class="divider top"></div>
-              <div v-if="manager2.isAdded" class="divider bottom"></div>
-              <div
-                v-if="manager2.isAdded"
-                class="manager-info"
-                :class="{ isActive: manager2.isAdded }"
-              >
+              <div v-if="managers[1].manager_id" class="divider top"></div>
+              <div v-if="managers[1].manager_id" class="divider bottom"></div>
+              <div v-if="managers[1].manager_id" class="manager-info">
                 <div class="manager-inputs">
                   <InputWithSpan
                     class="input manager"
@@ -255,9 +265,9 @@
                     type="text"
                     placeholder="담당자명2"
                     icon="user"
-                    :isValid="manager2.name.isValid"
-                    v-model.trim="manager2.name.value"
-                    @update:modelValue="setInputValue('manager2_name')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[1].manager_name"
+                    @update:modelValue="validateInputs('manager')"
                   />
                   <InputWithSpan
                     class="input manager"
@@ -265,9 +275,9 @@
                     type="text"
                     placeholder="담당자 핸드폰번호2"
                     icon="phone"
-                    :isValid="manager2.mobile.isValid"
-                    v-model.trim="manager2.mobile.value"
-                    @update:modelValue="setInputValue('manager2_mobile')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[1].manager_mobile"
+                    @update:modelValue="validateInputs('manager')"
                   />
                   <InputWithSpan
                     class="input manager"
@@ -275,9 +285,9 @@
                     type="text"
                     placeholder="담당자 이메일2"
                     icon="email"
-                    :isValid="manager2.email.isValid"
-                    v-model.trim="manager2.email.value"
-                    @update:modelValue="setInputValue('manager2_email')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[1].manager_email"
+                    @update:modelValue="validateInputs('manager')"
                   />
                 </div>
                 <div class="manager-buttons">
@@ -289,13 +299,9 @@
                   </button>
                 </div>
               </div>
-              <div v-if="manager3.isAdded" class="divider top"></div>
-              <div v-if="manager3.isAdded" class="divider bottom"></div>
-              <div
-                v-if="manager3.isAdded"
-                class="manager-info"
-                :class="{ isActive: manager3.isAdded }"
-              >
+              <div v-if="managers[2].manager_id" class="divider top"></div>
+              <div v-if="managers[2].manager_id" class="divider bottom"></div>
+              <div v-if="managers[2].manager_id !== null" class="manager-info">
                 <div class="manager-inputs">
                   <InputWithSpan
                     class="input manager"
@@ -303,9 +309,9 @@
                     type="text"
                     placeholder="담당자명3"
                     icon="user"
-                    :isValid="manager3.name.isValid"
-                    v-model.trim="manager3.name.value"
-                    @update:modelValue="setInputValue('manager3_name')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[2].manager_name"
+                    @update:modelValue="validateInputs('manager')"
                   />
                   <InputWithSpan
                     class="input manager"
@@ -313,9 +319,9 @@
                     type="text"
                     placeholder="담당자 핸드폰번호3"
                     icon="phone"
-                    :isValid="manager3.mobile.isValid"
-                    v-model.trim="manager3.mobile.value"
-                    @update:modelValue="setInputValue('manager3_mobile')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[2].manager_mobile"
+                    @update:modelValue="validateInputs('manager')"
                   />
                   <InputWithSpan
                     class="input manager"
@@ -323,9 +329,9 @@
                     type="text"
                     placeholder="담당자 이메일3"
                     icon="email"
-                    :isValid="manager3.email.isValid"
-                    v-model.trim="manager3.email.value"
-                    @update:modelValue="setInputValue('manager3_email')"
+                    :isValid="manager_input_isValid"
+                    v-model.trim="managers[2].manager_email"
+                    @update:modelValue="validateInputs('manager')"
                   />
                 </div>
                 <div class="manager-buttons">
@@ -350,13 +356,25 @@
                 icon="phone"
                 :isValid="cs_contact.isValid"
                 v-model.trim="cs_contact.value"
-                @update:modelValue="setInputValue('cs_contact')"
+                @update:modelValue="validateInputs('cs_contact')"
               />
             </td>
           </tr>
           <tr>
             <th>고객센터 운영시간 (주중)</th>
-            <td>ㅇ</td>
+            <td class="cs-hours">
+              <a-time-picker
+                :value="cs_opening_time"
+                format="hh:mm a"
+                @change="updateCsOpeningTime"
+              />
+              <div class="time-connector">~</div>
+              <a-time-picker
+                :value="cs_closing_time"
+                format="hh:mm a"
+                @change="updateCsClosingTime"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -374,8 +392,8 @@
                 class="textarea delivery-info"
                 id="delivery_info"
                 :placeholder="`ex)\n도서산간 지역은 배송비가 추가비용이 발생할 수 있습니다.\n결제 완료 후 1~3일 후 출고됩니다.`"
-                :isValid="long_introduction.isValid"
-                v-model.trim="long_introduction.value"
+                :isValid="delivery_information.isValid"
+                v-model.trim="delivery_information.value"
               />
               <p class="explanation">
                 {{ `\u24D8 문장이 끝나면 엔터로 줄바꿈을 해주세요.` }}
@@ -389,8 +407,8 @@
                 class="textarea exchange-refund-info"
                 id="exchange_refund_info"
                 :placeholder="`ex)\n브랜디는 소비자보호법 및 전자상거래법을 기반한 환불보장제를 운영 중에 있습니다.\n정당하지 않은 사유로 인한 환불 거부 등은 제재 사유가 될 수 있는 점 참고 부탁드립니다.`"
-                :isValid="long_introduction.isValid"
-                v-model.trim="long_introduction.value"
+                :isValid="exchange_refund_information.isValid"
+                v-model.trim="exchange_refund_information.value"
               />
               <p class="explanation">
                 {{ `\u24D8 문장이 끝나면 엔터로 줄바꿈을 해주세요.` }}
@@ -401,7 +419,15 @@
       </table>
     </PageSection>
     <div class="dual-buttons submit-buttons">
-      <button class="submit" type="button" @click="requestEdit">수정</button>
+      <button
+        class="submit"
+        :class="{ disabled: shop_status_id === 1 }"
+        type="button"
+        :disabled="shop_status_id === 1"
+        @click="requestEdit"
+      >
+        수정
+      </button>
       <button class="cancel" type="button" @click="cancelEdit">취소</button>
     </div>
   </div>
@@ -412,6 +438,13 @@ import PageHeading from '../../components/reusables/PageHeading.vue';
 import PageBar from '../../components/reusables/PageBar.vue';
 import PageSection from '../../components/reusables/PageSection.vue';
 import InputWithSpan from '../../components/reusables/InputWithSpan.vue';
+import RadioInputs from '../../components/reusables/RadioInputs.vue';
+import { seller_info } from '../../../public/data/USER_API.js';
+import {
+  SELLER_INFO,
+  SELLER_FILEUPLOAD,
+  SELLER_FILEUPLOAD_TEST
+} from '../../config.js';
 
 // const PageHeading = () => import('../../components/reusables/PageHeading.vue');
 // const PageBar = () => import('../../components/reusables/PageBar.vue');
@@ -419,7 +452,8 @@ import InputWithSpan from '../../components/reusables/InputWithSpan.vue';
 // const InputWithSpan = () =>
 //   import('../../components/reusables/InputWithSpan.vue');
 
-import { Upload } from 'ant-design-vue';
+import moment from 'moment';
+import { Upload, TimePicker } from 'ant-design-vue';
 import {
   PlusOutlined,
   LoadingOutlined,
@@ -439,36 +473,41 @@ export default {
   props: ['sellerId'],
   components: {
     'a-upload': Upload,
+    'a-time-picker': TimePicker,
     PlusOutlined,
     LoadingOutlined,
     MinusOutlined,
-    // SellerMyPage,
     PageHeading,
     PageBar,
     PageSection,
-    InputWithSpan
+    InputWithSpan,
+    RadioInputs
   },
   data() {
     return {
+      SELLER_INFO,
+      SELLER_FILEUPLOAD,
+      SELLER_FILEUPLOAD_TEST,
+      is_master: this.sellerData.is_master,
+      id: '',
       seller_id: '',
       account: '',
       seller_name_en: '',
       seller_name_ko: '',
-      manager_name: '',
       shop_status: '',
-      manager_mobile: '',
-      manager_email: '',
-      seller_category_id: '',
-      seller_type_id: '',
+      shop_status_id: '',
+      category: '',
+      category_id: 6,
+      category_type_id: 2,
       created_at: '',
-      //이미지 업로드 ant design 컴포넌트 data
+      //이미지 업로드 컴포넌트
       profileImgList: [],
       backgroundImgList: [],
       profileLoading: false,
       profileImageUrl: '',
       backgroundLoading: false,
       backgroundImageUrl: '',
-      //셀러 소개 data
+      //셀러소개
       short_introduction: {
         value: '',
         isValid: true
@@ -478,79 +517,170 @@ export default {
         isValid: true
       },
       //담당자 정보
-      manager1: {
-        name: {
-          value: '',
+      managers: [
+        {
+          manager_id: null,
+          manager_email: '',
+          manager_mobile: '',
+          manager_name: '',
           isValid: true
         },
-        mobile: {
-          value: '',
+        {
+          manager_id: null,
+          manager_email: '',
+          manager_mobile: '',
+          manager_name: '',
           isValid: true
         },
-        email: {
-          value: '',
+        {
+          manager_id: null,
+          manager_email: '',
+          manager_mobile: '',
+          manager_name: '',
           isValid: true
         }
-      },
-      manager2: {
-        isAdded: false,
-        name: {
-          value: '',
-          isValid: true
-        },
-        mobile: {
-          value: '',
-          isValid: true
-        },
-        email: {
-          value: '',
-          isValid: true
-        }
-      },
-      manager3: {
-        isAdded: false,
-        name: {
-          value: '',
-          isValid: true
-        },
-        mobile: {
-          value: '',
-          isValid: true
-        },
-        email: {
-          value: '',
-          isValid: true
-        }
-      },
+      ],
+      manager_input_isValid: true,
       //고객센터
       cs_contact: {
         value: '',
         isValid: true
+      },
+      cs_opening_time: '',
+      cs_closing_time: '',
+      //배송/환불
+      delivery_information: {
+        value: '',
+        isValid: true
+      },
+      exchange_refund_information: {
+        value: '',
+        isValid: true
+      },
+      //for radio input render (radioObject)
+      sellerCategoriesByType: {
+        name: 'sellerCategory',
+        selectedCategory: null,
+        1: [
+          { categoryId: 1, label: '쇼핑몰' },
+          { categoryId: 2, label: '마켓' },
+          { categoryId: 3, label: '로드샵' }
+        ],
+        2: [
+          { categoryId: 4, label: '디자이너브랜드' },
+          { categoryId: 5, label: '제너럴브랜드' },
+          { categoryId: 6, label: '내셔널브랜드' }
+        ],
+        3: [{ categoryId: 7, label: '뷰티' }]
       }
     };
   },
   methods: {
     loadSeller(sellerId) {
-      const { sellerData } = this;
-      console.log(sellerData.sellerList[0]);
-      const selectedSeller = sellerData.sellerList.find(
-        (seller) => seller.id == sellerId
-      );
-      this.seller_id = selectedSeller.id;
-      this.account = selectedSeller.account;
-      this.seller_name_en = selectedSeller.name_en;
-      this.seller_name_ko = selectedSeller.name_ko;
-      this.manager_name = selectedSeller.manager_name;
-      this.shop_status = selectedSeller.shop_status_name;
-      this.manager_mobile = selectedSeller.manager_mobile;
-      this.manager_email = selectedSeller.manager_email;
-      this.seller_category_id = selectedSeller.category;
-      this.created_at = selectedSeller.created_at;
+      if (seller_info.seller_id === Number(sellerId)) {
+        const selectedSeller = seller_info;
+        this.seller_id = selectedSeller.seller_id;
+        this.account = selectedSeller.account;
+        this.profileImageUrl = selectedSeller.profile_image;
+        this.backgroundImageUrl = selectedSeller.background_image;
+        this.seller_name_en = selectedSeller.seller_name_en;
+        this.seller_name_ko = selectedSeller.seller_name_ko;
+        this.shop_status = selectedSeller.shop_status;
+        this.shop_status_id = selectedSeller.shop_status_id;
+        let i = selectedSeller.managers.length;
+        while (i > 0) {
+          this.managers[i - 1].manager_id =
+            selectedSeller.managers[i - 1].manager_id;
+          this.managers[i - 1].manager_name =
+            selectedSeller.managers[i - 1].manager_name;
+          this.managers[i - 1].manager_mobile =
+            selectedSeller.managers[i - 1].manager_mobile;
+          this.managers[i - 1].manager_email =
+            selectedSeller.managers[i - 1].manager_email;
+          i--;
+        }
+        this.category = selectedSeller.category;
+        this.category_id = selectedSeller.category_id;
+        this.sellerCategoriesByType.selectedCategory =
+          selectedSeller.category_id;
+        this.category_type_id = selectedSeller.category_type_id;
+        this.created_at = selectedSeller.created_at;
+        this.short_introduction.value = selectedSeller.short_introduction;
+        this.long_introduction.value = selectedSeller.long_introduction;
+        this.cs_opening_time = moment(selectedSeller.cs_opening_time, 'HH:mm');
+        this.cs_closing_time = moment(selectedSeller.cs_closing_time, 'HH:mm');
+        this.cs_contact.value = selectedSeller.cs_contact;
+        this.delivery_information.value = selectedSeller.delivery_information;
+        this.exchange_refund_information.value =
+          selectedSeller.exchange_refund_information;
+      }
+    },
+    async getUserData(sellerId) {
+      try {
+        const res = await fetch(`${SELLER_INFO}/${sellerId}`, {
+          method: 'GET',
+          headers: {
+            Authorization:
+              'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50IjoibWFzdGVyMyIsImV4cCI6MTYwNzQwNTAzNH0.JiooF5kfRHafQdx2jtsw4AT7c0oujD0guyCXdLPmAxA'
+          }
+        });
+        const data = await res.json();
+        if (data.message === 'success') {
+          if (data.seller_info.seller_id === Number(sellerId)) {
+            const selectedSeller = data.seller_info;
+            this.seller_id = selectedSeller.seller_id;
+            this.account = selectedSeller.account;
+            this.profileImageUrl = selectedSeller.profile_image;
+            this.backgroundImageUrl = selectedSeller.background_image;
+            this.seller_name_en = selectedSeller.seller_name_en;
+            this.seller_name_ko = selectedSeller.seller_name_ko;
+            this.shop_status = selectedSeller.shop_status;
+            this.shop_status_id = selectedSeller.shop_status_id;
+            let i = selectedSeller.managers.length;
+            while (i > 0) {
+              this.managers[i - 1].manager_id =
+                selectedSeller.managers[i - 1].manager_id;
+              this.managers[i - 1].manager_name =
+                selectedSeller.managers[i - 1].manager_name;
+              this.managers[i - 1].manager_mobile =
+                selectedSeller.managers[i - 1].manager_mobile;
+              this.managers[i - 1].manager_email =
+                selectedSeller.managers[i - 1].manager_email;
+              i--;
+            }
+            this.category = selectedSeller.category;
+            this.category_id = selectedSeller.category_id;
+            this.sellerCategoriesByType.selectedCategory =
+              selectedSeller.category_id;
+            this.category_type_id = selectedSeller.category_type_id;
+            this.created_at = selectedSeller.created_at;
+            this.short_introduction.value = selectedSeller.short_introduction;
+            this.long_introduction.value = selectedSeller.long_introduction;
+            this.cs_opening_time = moment(
+              selectedSeller.cs_opening_time,
+              'HH:mm'
+            );
+            this.cs_closing_time = moment(
+              selectedSeller.cs_closing_time,
+              'HH:mm'
+            );
+            this.cs_contact.value = selectedSeller.cs_contact;
+            this.delivery_information.value =
+              selectedSeller.delivery_information;
+            this.exchange_refund_information.value =
+              selectedSeller.exchange_refund_information;
+          } else {
+            alert("fetched data's seller_id doesn't match URL path id");
+          }
+        } else {
+          alert('server message: FAIL');
+        }
+      } catch (err) {
+        alert('get error: get request to server failed');
+      }
     },
     // 이미지 업로드 methods
     handleChangeProfile(info) {
-      console.log(this.$refs.aUploadProfile.sFileList);
-      console.log(this.profileImgList);
       if (info.file.status === 'uploading') {
         this.profileLoading = true;
         return;
@@ -581,7 +711,7 @@ export default {
       }
     },
     beforeUploadProfile(file) {
-      console.log(this.$refs.aUploadProfile.sFileList);
+      // console.log(file);
       const isJpgOrPng =
         file.type === 'image/jpeg' ||
         file.type === 'image/jpg' ||
@@ -645,42 +775,53 @@ export default {
           break;
       }
     },
-    //
-    setShortIntroduction() {
-      console.log(this.shortIntroduction.value);
+    setSelectedCategory() {
+      console.log(this.sellerCategoriesByType.selectedCategory);
     },
-    setLongIntroduction() {
-      console.log(this.longIntroduction.value);
+    //
+    validateInputs(input) {
+      console.log(input);
     },
     addManager(managerNum) {
-      switch (managerNum) {
-        case 2:
-          this.manager2.isAdded = true;
-          break;
-        case 3:
-          this.manager3.isAdded = true;
-          break;
-      }
+      this.managers[managerNum - 1].manager_id =
+        this.sellerId + this.id + managerNum;
     },
     hideManager(managerNum) {
-      switch (managerNum) {
-        case 2:
-          this.manager2.isAdded = false;
-          break;
-        case 3:
-          this.manager3.isAdded = false;
-          break;
+      this.managers[managerNum - 1].manager_id = null;
+      this.managers[managerNum - 1].manager_name = '';
+      this.managers[managerNum - 1].manager_mobile = '';
+      this.managers[managerNum - 1].manager_email = '';
+    },
+    updateCsOpeningTime(time) {
+      this.cs_opening_time = time;
+      console.log(this.cs_opening_time.format('HH:mm'));
+    },
+    updateCsClosingTime(time) {
+      this.cs_closing_time = time;
+      console.log(this.cs_closing_time.format('HH:mm'));
+    },
+    requestEdit() {},
+    cancelEdit() {
+      const action = confirm(
+        '수정을 취소하시겠습니까?\n확인을 누르시면 새로고침됩니다.'
+      );
+      if (action) {
+        location.reload();
       }
     }
   },
-  created() {
-    this.loadSeller(this.sellerId);
-  },
-  watch: {
-    sellerId(newSellerId) {
-      this.loadSeller(newSellerId);
+  mounted() {
+    // this.loadSeller(this.sellerId);
+    this.getUserData(this.sellerId);
+    if (this.shop_status_id === 1) {
+      alert('입점대기 중인 셀러의 정보는 수정할 수 없습니다.');
     }
   }
+  // watch: {
+  //   sellerId(newSellerId) {
+  //     this.loadSeller(newSellerId);
+  //   }
+  // }
 };
 </script>
 
@@ -751,6 +892,14 @@ table {
     }
   }
 
+  .seller-categories {
+    display: flex;
+
+    .radio {
+      padding: 3px 10px;
+    }
+  }
+
   .textarea {
     height: 100px;
     min-width: 400px;
@@ -818,6 +967,18 @@ table {
       }
     }
   }
+
+  .cs-hours {
+    display: flex;
+    align-items: center;
+
+    .time-connector {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 70px;
+    }
+  }
 }
 .dual-buttons {
   display: flex;
@@ -841,6 +1002,10 @@ table {
       background-color: #5db85b;
       border: 1px solid #4dae4c;
     }
+    &.disabled {
+      background: rgba(135, 199, 131, 1);
+      cursor: default;
+    }
 
     &.change,
     &.cancel {
@@ -853,5 +1018,11 @@ table {
 .submit-buttons {
   justify-content: center;
   margin: 20px 0 30px 0;
+}
+
+button.disabled {
+  color: black;
+  background: white;
+  cursor: default;
 }
 </style>

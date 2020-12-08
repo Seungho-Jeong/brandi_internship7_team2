@@ -9,8 +9,8 @@
 
 <script>
 import Navbar from './components/Navbar.vue';
-// import { seller_list } from '../public/data/SELLERS_API.js';
-import { SELLER_LIST } from './config.js';
+import { seller_list } from '../public/data/SELLERS_API.js';
+// import { SELLER_LIST } from './config.js';
 
 export default {
   provide() {
@@ -24,7 +24,7 @@ export default {
   data() {
     return {
       sellerData: {
-        sellerList: []
+        sellerList: seller_list
       }
     };
   },
@@ -33,35 +33,35 @@ export default {
       const excludeNavPathsList = ['/login', '/signup'];
       return !excludeNavPathsList.includes(this.$route.path);
     }
-  },
-  methods: {
-    async fetchSellerData() {
-      try {
-        const res = await fetch(SELLER_LIST, {
-          method: 'GET',
-          headers: {
-            Authorization:
-              'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50IjoibWFzdGVyMyIsImV4cCI6MTYwNzQwNTAzNH0.JiooF5kfRHafQdx2jtsw4AT7c0oujD0guyCXdLPmAxA'
-          }
-        });
-        const data = await res.json();
-        if (data.message === 'success') {
-          this.sellerData = data.seller_list;
-          console.log(data.seller_list);
-        } else {
-          alert('server message: FAIL');
-        }
-      } catch (err) {
-        alert('get error: get request to server failed');
-      }
-    }
-  },
-  mounted() {
-    this.fetchSellerData();
-  },
-  beforeUpdate() {
-    console.log(this.sellerData.sellerList);
   }
+  // methods: {
+  //   async fetchSellerData() {
+  //     try {
+  //       const res = await fetch(SELLER_LIST, {
+  //         method: 'GET',
+  //         headers: {
+  //           Authorization:
+  //             'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50IjoibWFzdGVyMyIsImV4cCI6MTYwNzQwNTAzNH0.JiooF5kfRHafQdx2jtsw4AT7c0oujD0guyCXdLPmAxA'
+  //         }
+  //       });
+  //       const data = await res.json();
+  //       if (data.message === 'success') {
+  //         this.sellerData.sellerList = data.seller_list;
+  //         console.log(data.seller_list);
+  //       } else {
+  //         alert('server message: FAIL');
+  //       }
+  //     } catch (err) {
+  //       alert('get error: get request to server failed');
+  //     }
+  //   }
+  // },
+  // mounted() {
+  //   this.fetchSellerData();
+  // },
+  // beforeUpdate() {
+  //   console.log(this.sellerData.sellerList);
+  // }
 };
 </script>
 

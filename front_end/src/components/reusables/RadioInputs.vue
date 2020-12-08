@@ -1,27 +1,27 @@
 <template>
-  <div class="radio-selection" :class="radioObject.name">
+  <div class="radio-selection" :class="name">
     <input
       type="radio"
-      :name="radioObject.name"
-      :id="category.categoryId"
+      :name="name"
+      :id="id"
+      :checked="checked"
       :value="modelValue"
       @input="setSelectedRadio"
     />
-    <label :for="category.categoryId">{{ category.label }}</label>
+    <label :for="id">{{ label }}</label>
   </div>
 </template>
 
 <script>
 export default {
   name: 'RadioInputs',
-  props: ['radioObject', 'category', 'modelValue'],
+  props: ['name', 'id', 'label', 'checked', 'modelValue'],
   emit: ['update:modelValue'],
   data() {
     return {};
   },
   methods: {
     setSelectedRadio(e) {
-      console.log(e.target.id);
       this.$emit('update:modelValue', e.target.id);
     }
   }
@@ -39,7 +39,7 @@ export default {
   }
 
   label {
-    font-size: 15px;
+    font-size: 14px;
     cursor: pointer;
   }
 }

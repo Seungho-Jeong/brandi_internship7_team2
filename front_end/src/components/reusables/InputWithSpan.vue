@@ -148,6 +148,10 @@ export default {
       padding-left: 10px;
       border-radius: 3px;
       border: none;
+
+      &::placeholder {
+        font-size: 14px;
+      }
     }
 
     .noIcon {
