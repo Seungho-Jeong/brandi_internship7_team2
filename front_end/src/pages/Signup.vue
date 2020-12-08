@@ -71,10 +71,12 @@ eslint-disable vue/require-v-for-key */
           <h3>셀러 정보</h3>
           <div class="seller-categories">
             <RadioInputs
+              class="radio"
               v-for="category in sellerCategories.list"
-              :radio-object="sellerCategories"
-              :category="category"
               :key="category.categoryId"
+              :id="category.categoryId"
+              :name="sellerCategories.name"
+              :label="category.label"
               :value="category.categoryId"
               v-model="sellerCategories.selectedSellerCategory"
               @update:modelValue="setSelectedCategory()"
@@ -196,13 +198,13 @@ export default {
         name: 'sellerCategory',
         selectedSellerCategory: null,
         list: [
-          { categoryId: 1, label: '쇼핑몰' },
-          { categoryId: 2, label: '마켓' },
-          { categoryId: 3, label: '로드샵' },
-          { categoryId: 4, label: '디자이너브랜드' },
-          { categoryId: 5, label: '제너럴브랜드' },
-          { categoryId: 6, label: '내셔널브랜드' },
-          { categoryId: 7, label: '뷰티' }
+          { categoryTypeId: 1, categoryId: 1, label: '쇼핑몰' },
+          { categoryTypeId: 1, categoryId: 2, label: '마켓' },
+          { categoryTypeId: 1, categoryId: 3, label: '로드샵' },
+          { categoryTypeId: 2, categoryId: 4, label: '디자이너브랜드' },
+          { categoryTypeId: 2, categoryId: 5, label: '제너럴브랜드' },
+          { categoryTypeId: 2, categoryId: 6, label: '내셔널브랜드' },
+          { categoryTypeId: 3, categoryId: 7, label: '뷰티' }
         ]
       },
       sellerNameKo: {
@@ -516,6 +518,10 @@ export default {
         .seller-categories {
           display: flex;
           flex-wrap: wrap;
+
+          .radio {
+            padding: 3px 3px;
+          }
         }
       }
 
