@@ -17,8 +17,8 @@ class CustomJsonEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
-        if isinstance(obj, date):
-            return obj.strftime('%Y-%m-%d')
+#         if isinstance(obj, date):
+#             return obj.strftime('%Y-%m-%d')
         if isinstance(obj, Decimal):
             return int(obj)
         return super(JSONEncoder, self).default(obj)
