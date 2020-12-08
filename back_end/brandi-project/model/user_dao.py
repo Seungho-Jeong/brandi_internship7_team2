@@ -499,7 +499,7 @@ class UserDao:
 
         with db.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO seller_logs(
+                INSERT`` INTO seller_logs(
                     seller_id,
                     shop_status_id,
                     account,

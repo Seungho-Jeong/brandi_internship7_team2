@@ -1,5 +1,13 @@
 class ProductDao:
     def select_match_product_and_seller(self, db, inspection_data):
+        """
+        상품 상세정보 보기 또는 Modify를 위하여 상품정보를 Get할 때
+        대상 상품이 실존하는지 검사하는 함수입니다.
+        :param db: Database connection instance
+        :param inspection_data: 대상 상품의 정보
+        :return:
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -40,7 +48,12 @@ class ProductDao:
                     p.sale_status_id,
                     p.display_status_id,
                     p.modifier_id,
-                    p.product_subcategory_id
+                    p.product_subcategory_id,
+                    d.discount_start_date,
+                    d.discount_end_date,
+                    m.manufacturing_country_id,
+                    m.manufacturing_date,
+                    m.manufacturing_company
                 FROM
                     products AS p
                     LEFT JOIN
@@ -61,6 +74,12 @@ class ProductDao:
                     LEFT JOIN
                         product_subcategories_type AS subcat
                         ON p.product_subcategory_id = subcat.id
+                    LEFT JOIN
+                        discounts AS d
+                        ON p.id = d.product_id
+                    LEFT JOIN
+                        manufacturings AS m
+                        ON p.id = m.product_id
                 WHERE
                     p.id = %(product_id)s
                     AND p.is_delete = 0
@@ -69,6 +88,14 @@ class ProductDao:
             return cursor.fetchone()
 
     def select_product_image(self, db, search_params):
+        """
+        상품 상세정보 보기 또는 Modify를 위하여 상품정보를 Get할 때
+        대상 상품의 이미지(Max 5개)를 불러오는 함수입니다.
+        :param db: Database connection instance
+        :param search_params: 대상 상품의 정보
+        :return: 이미지 url(S3) 리스트
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -83,7 +110,40 @@ class ProductDao:
 
             return cursor.fetchall()
 
+    def select_product_option_and_inventory(self, db, search_params):
+        """
+        상품 상세정보 보기 또는 Modify를 위하여 상품정보를 Get할 때
+        대상 상품의 옵션과 해당 옵션에 대한 재고를 불러오는 함수입니다.
+        :param db: Database connection instance
+        :param search_params: 대상 상품의 정보
+        :return: 옵션 및 재고 리스트
+        """
+
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    o.id AS option_id,
+                    i.inventory
+                FROM
+                    options AS o
+                    LEFT JOIN
+                        inventory_settings AS i
+                        ON o.id = i.option_id
+                WHERE
+                    o.product_id = %(product_id)s
+            """, search_params)
+
+            return cursor.fetchall()
+
     def select_product_seller(self, db, seller_name):
+        """
+        관리자가 판매자를 대신하여 상품 신규등록을 대행하는 경우
+        대상 상품의 판매자를 선택할 수 있도록 판매자를 검색하는 함수입니다.
+        :param db: Database connection instance
+        :param seller_name: 판매자 이름(국문)
+        :return: 판매자 ID
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -123,25 +183,11 @@ class ProductDao:
 
             return cursor.fetchall()
 
-    def select_match_product_category_and_seller(self, db, search_params):
-        with db.cursor() as cursor:
-            cursor.execute("""
-                SELECT
-                    s.id
-                FROM
-                    sellers AS s
-                WHERE
-                    s.seller_category_id = %(category_id)s
-                    AND s.id = %(seller_id)s
-            """, search_params)
-
-            return cursor.fetchall()
-
     def select_product_subcategory(self, db, search_params):
         """
         상품의 서브 카테고리(2차 카테고리)를 DB Select하는 함수입니다
+        :param search_params: 대상 상품의 정보
         :param db: 데이터베이스 연결 객체
-        :param category_id: 카테고리 ID (product_category_id)
         :return: 서브 카테고리 리스트
         """
 
@@ -155,12 +201,19 @@ class ProductDao:
                     INNER JOIN product_categories_type AS cat
                         ON subcat.product_category_id = cat.id
                 WHERE
-                    subcat.product_category_id = %(category_id)s
+                    cat.id = %(category_id)s
             """, search_params)
 
             return cursor.fetchall()
 
     def select_product_color(self, db):
+        """
+        상품 신규등록 화면(API) 실행 시 표시해야 하는
+        옵션 중 색상에 대한 리스트 정보를 불러오는 함수입니다.
+        :param db: Database connection instance
+        :return: 색상 리스트
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -173,6 +226,13 @@ class ProductDao:
             return cursor.fetchall()
 
     def select_product_size(self, db):
+        """
+        상품 신규등록 화면(API) 실행 시 표시해야 하는
+        옵션 중 사이즈에 대한 리스트 정보를 불러오는 함수입니다.
+        :param db: Database connection instance
+        :return: 사이즈 리스트
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -185,6 +245,13 @@ class ProductDao:
             return cursor.fetchall()
 
     def select_product_country(self, db):
+        """
+        상품 신규등록 화면(API) 실행 시 표시해야 하는
+        제조정보 중 제조국가에 대한 메타 정보를 불러오는 함수입니다.
+        :param db: Database connection instance
+        :return: 국가 리스트
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
@@ -197,6 +264,14 @@ class ProductDao:
             return cursor.fetchall()
 
     def insert_product_option(self, db, product_info):
+        """
+        상품 신규등록 과정에서 옵션을 생성하면
+        RDB에 해당 상품에 대한 옵션 정보를 Insert하는 함수입니다.
+        :param db: Database connection instance
+        :param product_info: 해당 상품의 정보
+        :return:
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO options (
@@ -217,6 +292,14 @@ class ProductDao:
             return cursor.lastrowid
 
     def insert_product_inventory(self, db, product_info):
+        """
+        상품 신규등록 과정에서 옵션을 생성한 뒤
+        RDB에 해당 상품의 각 옵션에 대한 재고 관리여부 및 재고수량을 Insert하는 함수입니다.
+        :param db: Database connection instance
+        :param product_info: 해당 상품의 정보
+        :return:
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO inventory_settings(
@@ -228,13 +311,21 @@ class ProductDao:
                     %(seller_id)s,
                     %(product_id)s,
                     %(option_id)s,
-                    %(inventory_id)s
+                    %(inventory)s
                 )
             """, product_info)
 
             return cursor.lastrowid
 
     def insert_product_discount_info(self, db, product_info):
+        """
+        상품 신규등록 과정에서 할인 정보를 입력한 경우
+        RDB에 해당 상품에 대한 할인정보를 Insert하는 함수입니다.
+        :param db: Database connection instance
+        :param product_info: 해당 상품의 정보
+        :return:
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO discounts(
@@ -253,6 +344,14 @@ class ProductDao:
             return cursor.lastrowid
 
     def insert_product_manufacturing_information(self, db, product_info):
+        """
+        상품 신규등록 과정에서 제조정보를 별도 입력한 경우
+        RDB에 해당 상품의 제조정보를 Insert하는 함수입니다.
+        :param db: Database connection instance
+        :param product_info: 해당 상품의 정보
+        :return: 옵션 테이블의 마지막 Record number
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO manufacturings(
@@ -271,6 +370,14 @@ class ProductDao:
             """, product_info)
 
     def insert_product_image(self, db, product_info):
+        """
+        상품 신규등록 과정에서 상품 이미지를 S3 서버에 업로드한 경우
+        해당 이미지의 url을 RDB에 해당 상품의 제조정보를 Insert하는 함수입니다.
+        :param db: Database connection instance
+        :param product_info: 해당 상품의 정보
+        :return:
+        """
+
         with db.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO product_images (

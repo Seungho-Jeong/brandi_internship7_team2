@@ -1,10 +1,7 @@
-from PIL import Image
-
-from flask          import current_app
-from datetime       import date, datetime
+from datetime       import datetime
 
 from util.exception import NotExistsException, InvalidValueException
-from config         import SECRET, ALGORITHM, BUCKET_NAME
+from config         import BUCKET_NAME
 
 class ProductService:
     def __init__(self, product_dao):
@@ -18,21 +15,25 @@ class ProductService:
         :return: 상품 상세정보(JSON)
         """
 
-        ## 관리자 계정이 아닌 경우 자신이 보유한 상품인지 검사
+        ## 일반 셀러계정인 경우 자신이 보유한 상품인지 검사
         if search_params['seller_id']:
             if not self.product_dao.select_match_product_and_seller(db, search_params):
                 raise InvalidValueException('product inquiry failed', 401)
 
-        product_info   = self.product_dao.select_product_information(db, search_params)
-        product_images = self.product_dao.select_product_image(db, search_params)
+        ## 관리자 계정인 경우 조회대상 상품이 있는지 검사
+        else:
+            if not self.product_dao.select_product_information(db, search_params):
+                raise NotExistsException('not exists product', 400)
+
+        product_info        = self.product_dao.select_product_information(db, search_params)
+        product_images      = self.product_dao.select_product_image(db, search_params)
+        product_options     = self.product_dao.select_product_option_and_inventory(db, search_params)
 
         product_detail = {
-            'product_info' : product_info,
-            'product_image': [dict(image) for image in product_images]
+            'product_info'  : product_info,
+            'product_image' : [dict(image) for image in product_images],
+            'product_option': [dict(option) for option in product_options]
         }
-
-        if not product_detail:
-            raise NotExistsException('not exists product', 400)
 
         return product_detail
 
@@ -43,6 +44,7 @@ class ProductService:
         :param seller_name: 셀러 국문이름(KO)
         :return: 셀러 ID
         """
+
         seller_id = self.product_dao.select_product_seller(db, seller_name)
 
         return seller_id
@@ -55,9 +57,10 @@ class ProductService:
         :return: 서브 카테고리 리스트
         """
 
-        subcategory_id = self.product_dao.select_product_category(db, seller_id)
+        ## 판매자(ID)가 속한 판매자군에서 선택 가능한 카테고리 리스트 조회/반환
+        category_list = self.product_dao.select_product_category(db, seller_id)
 
-        return subcategory_id
+        return category_list
 
     def get_product_subcategory(self, db, search_params):
         """
@@ -66,10 +69,6 @@ class ProductService:
         :param db: 데이터베이스 연결 객체
         :return: 서브 카테고리 리스트
         """
-
-        inspection_result = self.product_dao.select_match_product_category_and_seller(db, search_params)
-        if not inspection_result:
-            raise NotExistsException('category inquiry failed', 401)
 
         subcategory_id = self.product_dao.select_product_subcategory(db, search_params)
 
@@ -86,13 +85,13 @@ class ProductService:
         color_list    = self.product_dao.select_product_color(db)
         country_list  = self.product_dao.select_product_country(db)
 
-        color_size_country_list = {
+        property_list = {
             'sizes'    : [dict(size) for size in size_list],
             'colors'   : [dict(color) for color in color_list],
             'countries': [dict(country) for country in country_list]
         }
 
-        return color_size_country_list
+        return property_list
 
     def create_new_product(self, db, product_info):
         """
@@ -110,12 +109,13 @@ class ProductService:
             product_info['product_id'] = new_product_id
             self.product_dao.insert_product_discount_info(db, product_info)
 
-        ## 5. 제조정보
+        ## 3. 제조정보
         if product_info['manufacturing_country_id']:
             product_info['product_id'] = new_product_id
             self.product_dao.insert_product_manufacturing_information(db, product_info)
 
-        ## 3. 각 옵션 & Ordering Number Insert 후 option_id 생성
+        ## 4. 옵션 생성
+        new_option_id_list = []
         ordering = 1
         for size in product_info['sizes']:
             for color in product_info['colors']:
@@ -127,24 +127,25 @@ class ProductService:
                 option_id = self.product_dao.insert_product_option(db, product_info)
                 ordering += 1
 
-                ## 4. 각 옵션에 대한 재고수량 Insert(미입력 시 Null)
-                for inventory in product_info['inventories']:
-                    product_info['option_id']    = option_id
-                    product_info['inventory_id'] = inventory
-                    self.product_dao.insert_product_inventory(db, product_info)
+                new_option_id_list.append(option_id)
+
+        ## 5. 각 옵션에 대한 재고수량 Insert(0 : 미지정)
+        for option_id, inventory in zip(new_option_id_list, product_info['inventories']):
+            product_info['option_id'] = option_id
+            product_info['inventory'] = inventory
+            self.product_dao.insert_product_inventory(db, product_info)
 
         return new_product_id
 
-    def update_product_information(self, db, modify_data, is_master):
+    def update_product_information(self, db, modify_data):
         """
         상품 정보를 수정하는 함수입니다
-        :param is_master: 관리자 계정 여부(Bool)
         :param modify_data: 수정 대상 상품에 대한 정보
         :param db: 데이터베이스 연결 객체
         """
 
         ## 셀러 계정인 경우 : 대상 상품 보유여부 및 존재여부 확인
-        if not is_master:
+        if not modify_data['is_master']:
             if not self.product_dao.select_match_product_and_seller(db, modify_data):
                 raise InvalidValueException('product inquiry failed', 401)
 
@@ -161,24 +162,39 @@ class ProductService:
         return  modify_result
 
     def upload_product_image(self, s3, product_images, new_product_id):
+        """
+        신규 상품 등록 시 이미지가 있으면 Amazon S3 서버에 이미지를 업로드하는 함수입니다
+        :param s3: S3 connection instance
+        :param product_images: Database connection instance
+        :param new_product_id: 신규 상품 ID(before db.commit)
+        :return: RDB용 이미지 url 리스트
+        """
+
         image_urls = []
 
         for product_image in product_images:
+            s3_path = f'image/product/{new_product_id}/{datetime.now()}_{product_image.filename}'
             s3.put_object(
                 Bucket             = BUCKET_NAME,
                 Body               = product_image,
-                Key                = f'{new_product_id}_{product_image.filename}',
-                ContentType        = product_image.content_type,
-                ContentDisposition = 'attachment'
+                Key                = s3_path,
+                ContentType        = product_image.content_type
             )
             location  = s3.get_bucket_location(Bucket = BUCKET_NAME)['LocationConstraint']
-            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/images/product/{new_product_id}/{datetime.now()}_{product_image.filename}'
+            image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/image/product/{s3_path}'
+
             image_urls.append(image_url)
 
         return image_urls
 
     def create_product_image_url(self, db, product_info, image_urls):
-
+        """
+        Amazon S3에 이미지를 업로드한 경우 이미지 url을 RDB에 Insert하는 함수입니다
+        :param db: Database connection instance
+        :param product_info: 이미지 업로드 대상 상품의 정보
+        :param image_urls: S3 서버에 업로드된 이미지의 url 리스트
+        :return:
+        """
         ordering = 1
         for image_url in image_urls:
             product_info['image_url']      = image_url
