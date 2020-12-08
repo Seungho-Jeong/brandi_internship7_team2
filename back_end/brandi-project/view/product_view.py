@@ -1,9 +1,9 @@
 import json
 
-from flask          import Blueprint, request, jsonify
-from datetime       import datetime, date
+from flask              import Blueprint, request, jsonify
+from datetime           import datetime, date
 
-from util.exception import (
+from util.exception     import (
     ALLOWED_EXTENSIONS,
     FileException,
     InvalidValueException,
@@ -11,11 +11,13 @@ from util.exception import (
     PermissionException
 )
 
-from db_connection  import db_connection, s3_connection
-from util.decorator import login_decorator
+from db_connection      import db_connection, s3_connection
+from util.decorator     import login_decorator
+from util.validation    import KeywordValidation
 
 def product_endpoints(product_service):
     product_app = Blueprint('product_app', __name__, url_prefix='/product')
+    keyword_validation = KeywordValidation()
 
     def allowed_file(filename):
         return '.' in filename and \
@@ -188,6 +190,8 @@ def product_endpoints(product_service):
                 ## 일반 계정인 경우 : 셀러 ID = 로그인 토큰의 셀러 ID
                 if not is_master:
                     product_info['seller_id'] = seller_id
+
+                keyword_validation.create_new_product(product_info)
 
                 ## 옵션 정보가 없는 경우
                 if product_info['sizes'] is None or product_info['colors'] is None:
