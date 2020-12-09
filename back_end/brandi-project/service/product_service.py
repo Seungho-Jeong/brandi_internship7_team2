@@ -18,12 +18,12 @@ class ProductService:
         ## 일반 셀러계정인 경우 자신이 보유한 상품인지 검사
         if search_params['seller_id']:
             if not self.product_dao.select_match_product_and_seller(db, search_params):
-                raise InvalidValueException('product inquiry failed', 401)
+                raise InvalidValueException('상품 조회에 실패하였습니다.', 401)
 
         ## 관리자 계정인 경우 조회대상 상품이 있는지 검사
         else:
             if not self.product_dao.select_product_information(db, search_params):
-                raise NotExistsException('not exists product', 400)
+                raise NotExistsException('존재하지 않는 상품입니다.', 400)
 
         product_info        = self.product_dao.select_product_information(db, search_params)
         product_images      = self.product_dao.select_product_image(db, search_params)
@@ -106,6 +106,7 @@ class ProductService:
 
         ## 2. 할인 기간이 있으면 할인기간을 Insert
         if product_info['discount_start_date'] or product_info['discount_end_date']:
+
             product_info['product_id'] = new_product_id
             self.product_dao.insert_product_discount_info(db, product_info)
 
@@ -160,10 +161,10 @@ class ProductService:
 
             s3_path = f'image/product/{year}/{month}/{day}/{new_product_id}/{created_at}_{filename}'
             s3.put_object(
-                Bucket=BUCKET_NAME,
-                Body=product_image,
-                Key=s3_path,
-                ContentType=product_image.content_type
+                Bucket      = BUCKET_NAME,
+                Body        = product_image,
+                Key         = s3_path,
+                ContentType = product_image.content_type
             )
             location  = s3.get_bucket_location(Bucket=BUCKET_NAME)['LocationConstraint']
             image_url = f'https://{BUCKET_NAME}.s3.{location}.amazonaws.com/{s3_path}'
@@ -182,11 +183,13 @@ class ProductService:
         """
 
         ordering_number = 1
+
         for image_url in image_urls:
             product_info['image_url'] = image_url
             product_info['image_ordering'] = ordering_number
 
             self.product_dao.insert_product_image(db, product_info)
+
             ordering_number += 1
 
     def update_product_information(self, db, modify_data):
@@ -199,16 +202,57 @@ class ProductService:
         ## 셀러 계정인 경우 : 대상 상품 보유여부 및 존재여부 확인
         if not modify_data['is_master']:
             if not self.product_dao.select_match_product_and_seller(db, modify_data):
-                raise InvalidValueException('product inquiry failed', 401)
+                raise InvalidValueException('상품 조회에 실패하였습니다.', 401)
 
         ## 관리자 계정인 경우 : 대상 상품 존재여부 확인
         else:
             if not self.product_dao.select_product_information(db, modify_data):
-                raise NotExistsException('not exists product', 400)
+                raise NotExistsException('존재하지 않는 상품입니다.', 400)
 
+        ## 1. 상품 기본정보 업데이트
         modify_result = self.product_dao.update_product_info(db, modify_data)
 
+        ## 2. 할인 정보 업데이트
+        discount_start_date = modify_data['discount_start_date']
+        discount_end_date   = modify_data['discount_end_date']
+
+        if discount_start_date or discount_end_date:
+            if not discount_start_date or not discount_end_date:
+                raise InvalidValueException('할인 시작날짜 또는 할인 종료날짜가 누락되었습니다.', 400)
+
+            if discount_start_date > discount_end_date:
+                raise InvalidValueException('할인 종료날짜는 할인 시작날짜보다 앞설 수 없습니다.', 400)
+
+            discount_exist_check = self.product_dao.select_product_discount_info(db, modify_data)
+
+            if not discount_exist_check:
+                create_result = self.product_dao.insert_product_discount_info(db, modify_data)
+                return create_result
+
+            else:
+                update_result = self.product_dao.update_product_discount_info(db, modify_data)
+                return update_result
+
+        ## 3. 제조 정보 업데이트
+        manufact_country = modify_data['manufacturing_country_id']
+        manufact_company = modify_data['manufacturing_company']
+        manufact_date    = modify_data['manufacturing_date']
+
+        if manufact_country or manufact_company or manufact_date:
+            if not manufact_country or not manufact_company or not manufact_date:
+                raise InvalidValueException('제조국 정보나 제조사 또는 제조일이 누락되었습니다.', 400)
+
+            manufact_exist_check = self.product_dao.select_product_manufact_info(db, modify_data)
+
+            if not manufact_exist_check:
+                create_result = self.product_dao.insert_product_manufacturing_information(db, modify_data)
+                return create_result
+
+            else:
+                update_result = self.product_dao.update_product_manufact_info(db, modify_data)
+                return update_result
+
         if not modify_result:
-            raise InvalidValueException('no information change', 400)
+            raise InvalidValueException('바뀐 정보가 없습니다.', 400)
 
         return  modify_result

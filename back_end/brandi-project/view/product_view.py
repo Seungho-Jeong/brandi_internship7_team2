@@ -45,7 +45,7 @@ def product_endpoints(product_service):
 
             ## 숫자가 아닌 값으로 접근하려는 경우
             if re.compile('[\D]').search(str(product_id)):
-                raise PathParameterException('product_id is integer only', 400)
+                raise PathParameterException('상품 번호는 숫자(int) 외 다른 값이 들어갈 수 없습니다.', 400)
 
             if request.is_master:
                 search_params['seller_id']  = None
@@ -82,7 +82,7 @@ def product_endpoints(product_service):
 
             ## 일반 셀러가 접근하려고 하는 경우
             if not request.is_master:
-                raise PermissionException('does not have a permission', 401)
+                raise PermissionException('접근 권한이 없습니다.', 401)
 
             seller_name = request.json['seller_name_ko']
             seller_id   = product_service.get_product_seller(db, seller_name)
@@ -117,9 +117,9 @@ def product_endpoints(product_service):
                 seller_id = request.seller_id
 
             category_list = product_service.get_product_category(db, seller_id)
-            return jsonify({'message' : 'success', 'category_list' : category_list}), 200
+            return jsonify({'message': 'success', 'category_list': category_list}), 200
         except Exception as e:
-            return jsonify({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message': 'error {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -194,6 +194,8 @@ def product_endpoints(product_service):
         else:
             db = None
             try:
+                db = db_connection()
+
                 form_data    = dict(request.form)
                 product_info = json.loads(form_data['body'])
                 seller_id    = request.seller_id
@@ -202,71 +204,6 @@ def product_endpoints(product_service):
                 if not is_master:
                     product_info['seller_id'] = seller_id
 
-                # keyword_validation.create_new_product(product_info)
-
-                ## 옵션 정보가 없는 경우
-                if product_info['sizes'] is None or product_info['colors'] is None:
-                    raise NotExistsException('not exists option data', 400)
-
-                ## 상품명에 따옴표 또는 쌍따옴표가 있는 경우
-                if re.compile('[\"\']').search(product_info['product_name']):
-                    raise InvalidValueException('product name invalied', 400)
-
-                ## 상품명이 100자를 초과하는 경우
-                if len(product_info['product_name']) > 100:
-                    raise InvalidValueException('product name too long', 400)
-
-                ## 옵션의 수(sizes by colors)와 재고가 일치하지 않는 경우
-                if len(product_info['sizes']) * len(product_info['colors']) != len(product_info['inventories']):
-                    raise InvalidValueException('not match options and inventories', 400)
-
-                ## 최소 발주수량이 20개 이상인 경우
-                if product_info['min_sale_quantity']:
-                    if product_info['min_sale_quantity'] > 20:
-                        raise InvalidValueException(
-                            'minimum quantity({}) exceed 20'.format(product_info['min_sale_quantity']), 400)
-
-                ## 최대 발주수량이 20개 이상인 경우
-                if product_info['max_sale_quantity']:
-                    if product_info['max_sale_quantity'] > 20:
-                        raise InvalidValueException(
-                            'maximum quantity({}) exceed 20'.format(product_info['max_sale_quantity']), 400)
-
-                ## 최소 발주수량이 최대 발주수량보다 큰 경우
-                    if product_info['min_sale_quantity']:
-                        if product_info['min_sale_quantity'] > product_info['max_sale_quantity']:
-                            raise InvalidValueException('minimum quantity bigger than maximum', 400)
-
-                ## 제조일자가 오늘보다 미래인 경우
-                if product_info['manufacturing_date']:
-                    if date.fromisoformat(product_info['manufacturing_date']) > date.today():
-                        raise InvalidValueException('invalid manufacturing date', 400)
-
-                ## 1줄 상품소개가 100자를 초과하는 경우
-                if product_info['short_introduction']:
-                    if len(product_info['short_introduction']) > 100:
-                        raise InvalidValueException('short_introduction too long', 400)
-
-                ## 할인율이 음수이거나 100%를 초과하는 경우
-                if product_info['discount_ratio']:
-                    if product_info['discount_ratio'] not in range(0, 100):
-                        return InvalidValueException('discount ratio must be between 0 and 99', 400)
-
-                ## 할인기간이 유한하나 시작날짜 또는 종료날짜만 선택된 경우
-                if product_info['discount_start_date'] or product_info['discount_end_date']:
-                    if not product_info['discount_end_date'] or not ['discount_start_date']:
-                        raise InvalidValueException('must have both start and end date', 400)
-
-                    ## 할인기간 종료날짜가 시작날짜보다 앞서는 경우
-                    if date.fromisoformat(product_info['discount_start_date']) > date.fromisoformat(product_info['discount_end_date']):
-                        raise InvalidValueException('there end date precedes the start date', 400)
-
-                ## 1. 신규 상품 ID 생성
-                db             = db_connection()
-                new_product_id = product_service.create_new_product(db, product_info)
-
-                ## 2. 이미지 S3 업로드
-                s3             = s3_connection()
                 product_images = []
 
                 for idx in range(1, 6):
@@ -274,23 +211,110 @@ def product_endpoints(product_service):
 
                     if product_image:
                         if allowed_file(product_image.filename) is False:
-                            raise FileException('the extension of that file is not available', 400)
+                            raise FileException('해당 파일의 확장자를 사용할 수 없습니다(가능한 확장자: JPG, JPEG, PNG)', 400)
 
                         product_images.append(product_image)
-                        image_urls = product_service.upload_product_image(s3, product_images, new_product_id)
 
-                        ## 3. 이미지 url RDB Record
-                        product_service.create_product_image_url(db, product_info, image_urls)
+                product_info['product_images'] = {
+                    "product_image": [product_image for product_image in product_images]
+                }
+
+                # product_info['product_images'] = product_images
+
+                ## Key error check
+                keyword_validation.create_new_product(product_info)
+
+                ## 상품명이 100자를 초과하는 경우
+                if len(product_info['product_name']) > 100:
+                    raise InvalidValueException('상품명은 100자를 초과할 수 없습니다.', 400)
+
+                ## 1줄 상품소개가 100자를 초과하는 경우
+                if len(product_info['short_introduction']) > 100:
+                    raise InvalidValueException('상품 한 줄 소개는 100자를 초과할 수 없습니다.', 400)
+
+                ## 상품명에 따옴표 또는 쌍따옴표가 있는 경우
+                if re.compile('[\"\']').search(product_info['product_name']):
+                    raise InvalidValueException('상품명에 따옴표(\')또는 쌍따옴표(")는 포함될 수 없습니다.', 400)
+
+                ## 옵션 정보가 없는 경우
+                if product_info['sizes'] is None or product_info['colors'] is None:
+                    raise NotExistsException('옵션 정보는 누락될 수 없습니다.', 400)
+
+                ## 옵션의 수(sizes by colors)와 재고가 일치하지 않는 경우
+                if len(product_info['sizes']) * len(product_info['colors']) != len(product_info['inventories']):
+                    raise InvalidValueException('옵션 개수와 재고값의 개수가 일치하지 않습니다.', 400)
+
+                ## 최소 발주수량이 20개 이상인 경우
+                if product_info['min_sale_quantity'] is not None:
+                    if product_info['min_sale_quantity'] > 20:
+                        raise InvalidValueException(
+                            '상품의 최소 발주수량은 최대 20개입니다.(입력값:{})'.format(product_info['min_sale_quantity']), 400)
+
+                ## 최대 발주수량이 20개 이상인 경우
+                if product_info['max_sale_quantity'] is not None:
+                    if product_info['max_sale_quantity'] > 20:
+                        raise InvalidValueException(
+                            '상품의 최대 발주수량은 최대 20개입니다.(입력값:{})'.format(product_info['max_sale_quantity']), 400)
+
+                ## 최소 발주수량이 최대 발주수량보다 큰 경우
+                if product_info['min_sale_quantity'] is not None and product_info['min_sale_quantity'] is not None:
+                    if product_info['min_sale_quantity'] > product_info['max_sale_quantity']:
+                        raise InvalidValueException('최소 발주수량은 최대 발주수량보다 클 수 없습니다.', 400)
+
+                ## 제조일자가 오늘보다 미래인 경우
+                if product_info['manufacturing_date'] is not None:
+                    if date.fromisoformat(product_info['manufacturing_date']) > date.today():
+                        raise InvalidValueException('제조일자는 현재보다 미래일 수 없습니다.', 400)
+
+                ## 할인율이 음수이거나 100%를 초과하는 경우
+                if product_info['discount_ratio'] is not None:
+                    if product_info['discount_ratio'] not in range(0, 100):
+                        return InvalidValueException('할인율은 0보다 작거나 99를 초과할 수 없습니다.', 400)
+
+                ## 할인기간이 유한하나 시작날짜 또는 종료날짜만 선택된 경우
+                if product_info['discount_start_date'] is not None or product_info['discount_end_date'] is not None:
+                    if not product_info['discount_end_date'] or not ['discount_start_date']:
+                        raise InvalidValueException('할인 시작날짜 또는 할인 종료날짜가 누락되었습니다.', 400)
+
+                    ## 할인기간 종료날짜가 시작날짜보다 앞서는 경우
+                    if date.fromisoformat(product_info['discount_start_date']) > date.fromisoformat(product_info['discount_end_date']):
+                        raise InvalidValueException('할인 종료날짜는 할인 시작날짜보다 앞설 수 없습니다.', 400)
+
+                ## 1. 신규 상품 ID 생성
+                new_product_id = product_service.create_new_product(db, product_info)
+
+                ## 2. 이미지 S3 업로드
+                s3             = s3_connection()
+                product_images = []
+
+                for idx in range(1, 6):
+                    product_image = request.files.get('product_image_{}'.format(idx), None)
+
+                    if product_image:
+                        if allowed_file(product_image.filename) is False:
+                            raise FileException('해당 파일의 확장자를 사용할 수 없습니다(가능한 확장자: JPG, JPEG, PNG)', 400)
+
+                        product_images.append(product_image)
+                image_urls = product_service.upload_product_image(s3, product_images, new_product_id)
+
+                ## 3. 이미지 url RDB Record
+                product_service.create_product_image_url(db, product_info, image_urls)
 
                 db.commit()
 
                 return jsonify({'message' : 'success', 'product_id' : new_product_id}), 200
+            except NotExistsException as e:
+                db.rollback()
+                return jsonify({'message': e.message}), e.status_code
+            except InvalidValueException as e:
+                db.rollback()
+                return jsonify({'message': e.message}), e.status_code
             except KeyError as e:
                 db.rollback()
-                return jsonify({'message' : 'key_error {}'.format(e)}), 400
+                return jsonify({'message': 'key_error {}'.format(e)}), 400
             except Exception as e:
                 db.rollback()
-                return jsonify({'message' : 'error {}'.format(e)}), 500
+                return jsonify({'message': 'error {}'.format(e)}), 500
             finally:
                 if db:
                     db.close()
@@ -314,11 +338,11 @@ def product_endpoints(product_service):
                 search_params = {}
 
                 if request.is_master:
-                    search_params['seller_id'] = None
+                    search_params['seller_id']  = None
                     search_params['product_id'] = product_id
 
                 else:
-                    search_params['seller_id'] = request.seller_id
+                    search_params['seller_id']  = request.seller_id
                     search_params['product_id'] = product_id
 
                 product_info = product_service.get_product_information(db, search_params)
@@ -342,9 +366,46 @@ def product_endpoints(product_service):
                 form_data   = dict(request.form)
                 modify_data = json.loads(form_data['body'])
 
+                ## Key error check
+                keyword_validation.modify_product_information(modify_data)
+
                 modify_data['is_master']  = request.is_master
                 modify_data['seller_id']  = request.seller_id
                 modify_data['product_id'] = product_id
+
+                ## 상품명에 따옴표 또는 쌍따옴표가 있는 경우
+                if re.compile('[\"\']').search(modify_data['product_name']):
+                    raise InvalidValueException('상품명에 따옴표(\')또는 쌍따옴표(")는 포함될 수 없습니다.', 400)
+
+                ## 상품명이 100자를 초과하는 경우
+                if len(modify_data['product_name']) > 100:
+                    raise InvalidValueException('상품명은 100자를 초과할 수 없습니다.', 400)
+
+                ## 1줄 상품소개가 100자를 초과하는 경우
+                if len(modify_data['short_introduction']) > 100:
+                    raise InvalidValueException('상품 한 줄 소개는 100자를 초과할 수 없습니다.', 400)
+
+                ## 최소 발주수량이 20개 이상인 경우
+                if modify_data['min_sale_quantity'] is not None:
+                    if modify_data['min_sale_quantity'] > 20:
+                        raise InvalidValueException(
+                            '상품의 최소 발주수량은 최대 20개입니다.(입력값:{})'.format(modify_data['min_sale_quantity']), 400)
+
+                ## 최대 발주수량이 20개 이상인 경우
+                if modify_data['max_sale_quantity'] is not None:
+                    if modify_data['max_sale_quantity'] > 20:
+                        raise InvalidValueException(
+                            '상품의 최대 발주수량은 최대 20개입니다.(입력값:{})'.format(modify_data['max_sale_quantity']), 400)
+
+                ## 최소 발주수량이 최대 발주수량보다 큰 경우
+                if modify_data['min_sale_quantity'] is not None and modify_data['max_sale_quantity'] is not None:
+                    if modify_data['min_sale_quantity'] > modify_data['max_sale_quantity']:
+                        raise InvalidValueException('최소 발주수량은 최대 발주수량보다 클 수 없습니다.', 400)
+
+                ## 할인율이 음수이거나 100%를 초과하는 경우
+                if modify_data['discount_ratio'] is not None:
+                    if modify_data['discount_ratio'] not in range(0, 100):
+                        return InvalidValueException('할인율은 0보다 작거나 99를 초과할 수 없습니다.', 400)
 
                 product_service.update_product_information(db, modify_data)
 

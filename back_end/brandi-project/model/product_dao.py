@@ -263,6 +263,40 @@ class ProductDao:
 
             return cursor.fetchall()
 
+    def select_product_discount_info(self, db, modify_data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    product_id,
+                    seller_id,
+                    discount_start_date,
+                    discount_end_date
+                FROM
+                    discounts
+                WHERE
+                    product_id = %(product_id)s
+            """, modify_data)
+
+            return cursor.fetchone()
+
+    def select_product_manufact_info(self, db, modify_data):
+        with db.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    product_id,
+                    manufacturing_country_id,
+                    manufacturing_company,
+                    manufacturing_date
+                FROM
+                    manufacturings
+                WHERE
+                    product_id = %(product_id)s
+            """, modify_data)
+
+            return cursor.fetchone()
+
     def insert_product_option(self, db, product_info):
         """
         상품 신규등록 과정에서 옵션을 생성하면
@@ -344,7 +378,6 @@ class ProductDao:
             return cursor.lastrowid
 
     def insert_product_manufacturing_information(self, db, product_info):
-        # print(product_info)
         """
         상품 신규등록 과정에서 제조정보를 별도 입력한 경우
         RDB에 해당 상품의 제조정보를 Insert하는 함수입니다.
@@ -389,7 +422,7 @@ class ProductDao:
                 ) VALUES (
                     %(seller_id)s,
                     %(product_id)s,
-                    %(image_url)s,
+                    %(product_image)s,
                     %(image_ordering)s
                 )
             """, product_info)
@@ -422,16 +455,16 @@ class ProductDao:
                 ) VALUES (
                     %(product_name)s,
                     %(price)s,
-                    DEFAULT,
+                    %(short_introduction)s,
                     %(product_detail_information)s,
-                    DEFAULT,
-                    DEFAULT,
-                    DEFAULT,
+                    %(discount_ratio)s,
+                    %(min_sale_quantity)s,
+                    %(max_sale_quantity)s,
                     %(seller_id)s,
                     DEFAULT,
-                    DEFAULT,
-                    DEFAULT,
-                    DEFAULT,
+                    %(registration_status_id)s,
+                    %(sale_status_id)s,
+                    %(display_status_id)s,
                     DEFAULT,
                     %(product_subcategory_id)s
                 )
@@ -468,18 +501,46 @@ class ProductDao:
                 SET
                     p.product_name               = %(product_name)s,
                     p.price                      = %(price)s,
-                    p.short_introduction         = DEFAULT,
+                    p.short_introduction         = %(short_introduction)s,
                     p.product_detail_information = %(product_detail_information)s,
-                    p.discount_ratio             = DEFAULT,
-                    p.min_sale_quantity          = DEFAULT,
-                    p.max_sale_quantity          = DEFAULT,
+                    p.discount_ratio             = %(discount_ratio)s,
+                    p.min_sale_quantity          = %(min_sale_quantity)s,
+                    p.max_sale_quantity          = %(max_sale_quantity)s,
                     p.registration_status_id     = %(registration_status_id)s,
                     p.sale_status_id             = %(sale_status_id)s,
                     p.display_status_id          = %(display_status_id)s,
-                    p.modifier_id                = %(seller_id)s,
-                    p.product_subcategory_id     = %(product_subcategory_id)s
+                    p.modifier_id                = %(seller_id)s
                 WHERE
                     p.id = %(product_id)s
+            """, update_data)
+
+            return modify_result
+
+    def update_product_discount_info(self, db, update_data):
+        with db.cursor() as cursor:
+            modify_result = cursor.execute("""
+                UPDATE
+                    discounts
+                SET
+                    discount_start_date = %(discount_start_date)s,
+                    discount_end_date   = %(discount_end_date)s
+                WHERE
+                    product_id = %(product_id)s
+            """, update_data)
+
+            return modify_result
+
+    def update_product_manufact_info(self, db, update_data):
+        with db.cursor() as cursor:
+            modify_result = cursor.execute("""
+                UPDATE
+                    manufacturings
+                SET
+                    manufacturings_country_id = %(manufacturings_country_id)s,
+                    manufacturing_company     = %(manufacturing_company)s,
+                    manufacturing_date        = %(manufacturing_date)s
+                WHERE
+                    product_id = %(product_id)s
             """, update_data)
 
             return modify_result
