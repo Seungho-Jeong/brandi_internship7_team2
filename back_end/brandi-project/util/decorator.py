@@ -1,5 +1,4 @@
 import jwt
-import json
 from functools import wraps
 
 from flask import request, jsonify
@@ -28,18 +27,18 @@ def login_decorator(func):
             seller = UserDao().check_account(db, user_info)
 
             if not seller:
-                raise NotExistsException('not exists account', 400)
+                raise NotExistsException('존재하지 않는 계정입니다.', 400)
 
             if not seller['is_delete']:
                 request.is_master = seller['is_master']
                 request.seller_id = seller['id']
             else:
-                raise JwtTokenException('invalid token', 401)
+                raise JwtTokenException('유효하지 않는 토큰입니다.', 401)
 
         except jwt.ExpiredSignatureError:
-            return jsonify({'message' : 'expired token'}), 401
+            return jsonify({'message' : '만료된 토큰입니다. 다시 로그인을 해주세요.'}), 401
         except jwt.DecodeError:
-            return jsonify({'message' : 'token decode error'}), 400
+            return jsonify({'message' : '토큰이 존재하지 않거나 잘못된 토큰입니다.'}), 400
         finally:
             if db:
                 db.close()

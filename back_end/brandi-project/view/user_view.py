@@ -1,6 +1,7 @@
 import json
 
 from flask import Blueprint, request, jsonify
+from PIL   import Image
 
 from util.exception import (
     ALLOWED_EXTENSIONS,
@@ -48,16 +49,16 @@ def user_endpoints(user_service):
             return jsonify({'message' : 'success'}), 200
         except RequestException as e:
             db.rollback()
-            return jsonify({'message': e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except ExistsException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
         except KeyError as e:
             db.rollback()
-            return jsonify({'message' : 'key_error {}'.format(e)}), 400
+            return jsonify({'message': format(e)}), 400
         except Exception as e:
             db.rollback()
-            return jsonify({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : '서버 오류 : {}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -86,7 +87,7 @@ def user_endpoints(user_service):
             return jsonify({'message' : 'success', 'access_token' : access_token}), 200
         except RequestException as e:
             db.rollback()
-            return jsonify({'message': e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except PermissionException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -150,17 +151,17 @@ def user_endpoints(user_service):
 
             for key in filters:
                 if key not in filter_list:
-                    return jsonify({'message' : 'invalid input {} in filters'.format(key)}), 400
+                    return jsonify({'message' : "검색 필터의 '{}'은 잘못된 값입니다.".format(key)}), 400
 
             if ('start_date' in filters) and ('end_date' in filters):
                 if filters['end_date'] < filters['start_date']:
-                    raise InvalidValueException("'end_date' should not earlier than 'start_date'", 400)
+                    raise InvalidValueException("'종료 날짜'가 '시작 날짜'보다 이전의 날짜일 수 없습니다.", 400)
 
             if ('offset' in filters) and (int(filters['offset']) <= 0):
-                raise InvalidValueException("only request an integer of 1 or more for 'offset'", 400)
+                raise InvalidValueException("페이지 번호는 1보다 크거나 같은 정수여야 합니다.", 400)
 
             if ('limit' in filters) and (int(filters['limit']) <= 0):
-                raise InvalidValueException("only request an integer of 1 or more for 'limit'", 400)
+                raise InvalidValueException("페이지 행의 개수는 1보다 크거나 같은 정수여야 합니다.", 400)
 
             sellers = user_service.get_seller_list(db, filters)
 
@@ -242,16 +243,28 @@ def user_endpoints(user_service):
 
             data = json.loads(form_data['body'])
 
+            # 파일 확장자 확인
             if request.files:
                 profile_image = request.files['profile_image'] if 'profile_image' in request.files else None
                 if profile_image and not allowed_file(profile_image.filename):
-                    raise FileException('the extension of that file is not available', 400)
+                    raise FileException('해당 파일의 확장자는 사용할 수 없습니다.', 400)
                 data['profile_image'] = profile_image if profile_image.filename else None
 
                 background_image = request.files['background_image'] if 'background_image' in request.files else None
                 if background_image and not allowed_file(background_image.filename):
-                    raise FileException('the extension of that file is not available', 400)
+                    raise FileException('해당 파일의 확장자는 사용할 수 없습니다.', 400)
                 data['background_image'] = background_image if background_image.filename else None
+
+                # 파일 size (width, height) 확인
+                if background_image:
+                    image = Image.open(background_image)
+                    width, height = image.size
+
+                    if width < 1200 or height < 850:
+                        raise FileException('배경이미지의 크기는 가로 1200, 세로 850 이상이어야 합니다.', 400)
+
+                    # 파일 스트림 포인터를 다시 초기화
+                    background_image.seek(0)
 
             # key_error 예외처리
             keyword_validation.update_seller_information(data)
@@ -278,19 +291,19 @@ def user_endpoints(user_service):
             return jsonify({'message' : 'success'}), 200
         except RequestException as e:
             db.rollback()
-            return jsonify({'message': e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except RequestEntityTooLarge:
             db.rollback()
-            return jsonify({'message': 'image files cannot exceed 5MB'}), 400
+            return jsonify({'message' : '이미지 파일의 크기는 5MB 이하여야 합니다.'}), 400
         except FileException as e:
             db.rollback()
-            return jsonify({'message': e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except PathParameterException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
         except InvalidValueException as e:
             db.rollback()
-            return jsonify({'message': e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except PermissionException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -299,7 +312,7 @@ def user_endpoints(user_service):
             return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return jsonify({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : '{}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -333,7 +346,7 @@ def user_endpoints(user_service):
             return jsonify({'message' : 'success'}), 200
         except RequestException as e:
             db.rollback()
-            return jsonify({'message': e.message}), e.status_code
+            return jsonify({'message' : e.message}), e.status_code
         except PermissionException as e:
             db.rollback()
             return jsonify({'message' : e.message}), e.status_code
@@ -348,7 +361,7 @@ def user_endpoints(user_service):
             return jsonify({'message' : 'key_error {}'.format(e)}), 400
         except Exception as e:
             db.rollback()
-            return jsonify({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : '{}'.format(e)}), 500
         finally:
             if db:
                 db.close()
@@ -386,7 +399,7 @@ def user_endpoints(user_service):
         except PermissionException as e:
             return jsonify({'message' : e.message}), e.status_code
         except Exception as e:
-            return jsonify({'message' : 'error {}'.format(e)}), 500
+            return jsonify({'message' : '{}'.format(e)}), 500
         finally:
             if db:
                 db.close()

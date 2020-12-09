@@ -161,7 +161,7 @@ class UserDao:
         with db.cursor() as cursor:
             sql = """
                 SELECT
-                    info.id,
+                    info.seller_id AS id,
                     seller.account,
                     seller.seller_name_en AS name_en,
                     seller.seller_name_ko AS name_ko,
@@ -412,7 +412,6 @@ class UserDao:
         with db.cursor() as cursor:
             cursor.execute("""
                 SELECT
-                    id AS manager_id,
                     manager_name,
                     manager_mobile,
                     manager_email
