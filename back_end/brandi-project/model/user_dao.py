@@ -498,7 +498,7 @@ class UserDao:
 
         with db.cursor() as cursor:
             cursor.execute("""
-                INSERT`` INTO seller_logs(
+                INSERT INTO seller_logs(
                     seller_id,
                     shop_status_id,
                     account,
@@ -611,7 +611,7 @@ class UserDao:
                 WHERE
                     log.seller_id = %s
                 ORDER BY
-                    log.id DESC 
+                    log.id ASC 
             """, seller_id)
 
             return cursor.fetchall()

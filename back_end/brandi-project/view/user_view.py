@@ -243,6 +243,9 @@ def user_endpoints(user_service):
 
             data = json.loads(form_data['body'])
 
+            if not data['managers']:
+                raise InvalidValueException('담당 매니저는 최소 1개 이상의 값이 필요합니다.', 400)
+
             # 파일 확장자 확인
             if request.files:
                 profile_image = request.files['profile_image'] if 'profile_image' in request.files else None

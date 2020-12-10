@@ -131,51 +131,40 @@ class UserService:
         manager_info = {}
         order_index = 1
 
+        # 기존의 개수를 체크 -> ordering
         ordering = self.user_dao.get_ordering_managers(db, seller_id)
-        if ordering and data['managers']:  # 기존 존재 + request 에도 존재
-            exist_count = ordering['ordering']
-            input_count = len(data['managers'])
+        exist_count = ordering['ordering']
+        input_count = len(data['managers'])
 
-            if len(data['managers']) > 3:  # 리스트를 3개 이상 요청했을 경우
-                raise InvalidValueException('담당매니저는 최대 3개까지만 등록할 수 있습니다.', 400)
+        # 리스트를 3개 이상 요청했을 경우
+        if len(data['managers']) > 3:
+            raise InvalidValueException('담당매니저는 최대 3개까지만 등록할 수 있습니다.', 400)
 
-            count = exist_count if exist_count > input_count else input_count
-            # 기존개수가 많으면 기존개수(exist_count)만큼, 기존개수가 더 적으면 입력개수(input_count)만큼 반복
-            for i in range(count):
-                manager_info['seller_id'] = seller_id
-                manager_info['ordering'] = order_index
+        # 기존개수가 많으면 기존개수(exist_count)만큼, 기존개수가 더 적으면 입력개수(input_count)만큼 반복
+        count = exist_count if exist_count > input_count else input_count
 
-                if (exist_count > input_count) and (i >= input_count):  # 기존이 더 많을때 나머지는 삭제
+        for i in range(count):
+            manager_info['seller_id'] = seller_id
+            manager_info['ordering'] = order_index
+
+            # 기존개수가 더 많을때 나머지는 삭제 (수정 -> 삭제)
+            if (exist_count > input_count) and (i >= input_count):
+                if order_index != 1:
                     self.user_dao.delete_managers(db, manager_info)
-                else:  # 기존 개수랑 같거나 + 기존이 더 적을때 일단 수정 그리고 생성
-                    manager_info['manager_name']   = data['managers'][i]['manager_name']
-                    manager_info['manager_email']  = data['managers'][i]['manager_email']
-                    manager_info['manager_mobile'] = data['managers'][i]['manager_mobile']
+            else:
+                # 기존 개수랑 같거나 + 기존이 더 적을때 일단 수정 그리고 생성
+                manager_info['manager_name']   = data['managers'][i]['manager_name']
+                manager_info['manager_email']  = data['managers'][i]['manager_email']
+                manager_info['manager_mobile'] = data['managers'][i]['manager_mobile']
 
-                    if (exist_count < input_count) and (i >= exist_count):
-                        self.user_dao.create_managers(db, manager_info)
-                    else:
-                        self.user_dao.update_managers(db, manager_info)
-
-                order_index += 1
-        else:
-            if not data['managers']:  # 기존에 존재했으나 request 는 없을 경우 (전체삭제)
-                for i in range(ordering['ordering']):
-                    manager_info['seller_id'] = seller_id
-                    manager_info['ordering'] = order_index
-                    self.user_dao.delete_managers(db, manager_info)
-                    order_index += 1
-
-            if not ordering:  # 기존에 존재하지 않았으나 request 는 있는 경우 (전체생성)
-                if len(data['managers']) > 3:  # 리스트를 3개 이상 요청했을 경우
-                    raise InvalidValueException('담당매니저는 최대 3개까지만 등록할 수 있습니다.', 400)
-
-                for manager in data['managers']:
-                    manager_info = manager
-                    manager_info['seller_id'] = seller_id
-                    manager_info['ordering'] = order_index
+                if (exist_count < input_count) and (i >= exist_count):
+                    # 수정 후 남은 개수만큼 생성 (수정 -> 생성)
                     self.user_dao.create_managers(db, manager_info)
-                    order_index += 1
+                else:
+                    # 개수가 같은 경우 (수정)
+                    self.user_dao.update_managers(db, manager_info)
+
+            order_index += 1
 
         data.pop('managers')
         data['seller_id'] = seller_id
@@ -213,14 +202,9 @@ class UserService:
         self.user_dao.update_seller_information(db, data)
 
         manager_info = self.user_dao.get_managers(db, seller_id)
-        if not manager_info:
-            data['manager_name'] = None
-            data['manager_mobile'] = None
-            data['manager_email'] = None
-        else:
-            data['manager_name'] = manager_info[0]['manager_name']
-            data['manager_mobile'] = manager_info[0]['manager_mobile']
-            data['manager_email'] = manager_info[0]['manager_email']
+        data['manager_name'] = manager_info[0]['manager_name'] if manager_info[0]['manager_name'] else None
+        data['manager_mobile'] = manager_info[0]['manager_mobile']
+        data['manager_email'] = manager_info[0]['manager_email'] if manager_info[0]['manager_email'] else None
 
         # 로그 생성
         user_log = self.user_dao.get_seller_logs(db, seller_id)
@@ -294,5 +278,6 @@ class UserService:
             'shop_status' : log['shop_status'],
             'modifier'    : log['modifier']
         } for log in user_log]
+        log_list.reverse()
 
         return log_list

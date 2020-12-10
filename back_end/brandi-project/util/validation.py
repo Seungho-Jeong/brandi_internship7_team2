@@ -1,4 +1,12 @@
 def validation(data, lst, func_name):
+    """
+    미리 정의한 리스트(lst)와 요청받은 데이터(data)를 비교하여
+    틀린 key 값이거나 특정 key 값을 요청하지 않은 경우를 예외처리
+    :param data: 요청(request) 받은 데이터
+    :param lst: 미리 정의한 리스트
+    :param func_name: 함수 이름
+    """
+
     data_list = []
     # 틀린 key 값을 요청받았을 경우
     for key in data:
@@ -13,6 +21,10 @@ def validation(data, lst, func_name):
 
 
 class KeywordValidation:
+    """
+    key 값이 필요한 메소드 별로 사전에 key 값을 정의
+    """
+
     # 회원가입
     def signup(self, data):
         lst = [
