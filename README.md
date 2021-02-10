@@ -8,7 +8,7 @@
 ### 프론트 영역
 - **Webpack Build**
 - **UI 언어 : Vue**
-- **UI 라이브러리 : MeterialUI or Vuetify 등 **
+- **UI 라이브러리 : MeterialUI or Vuetify 등**
 - 스타일 시트 : CSS or SCSS 등
 ### 공통
 - **팀원별 역할 정리**
