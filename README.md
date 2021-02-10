@@ -10,7 +10,7 @@
 ## Tech Stack
 
 ### Back end
-- **DB : MySQL + AWS S3**
+- **DB : MySQL**
 - **RESTful API로 설계**
 - API: Flask
 - API 언어 : Python 3.7
