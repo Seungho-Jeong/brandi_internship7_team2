@@ -7,6 +7,8 @@ venv/
 user_image
 user_image/
 user_image.*
+../../.DS_Store
+../.vscods/
 
 # temporary files
 *.log
