@@ -7,6 +7,7 @@ venv/
 user_image
 user_image/
 user_image.*
+../.vscode/
 
 # temporary files
 *.log
